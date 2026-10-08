@@ -1,24 +1,191 @@
-@import url("https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap");
-@import url("https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap");
+@import "https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap";
+@import "https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap";
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+
+@theme {
+  --color-surface-container-lowest: #0e0e11;
+  --color-surface-container-low: #1b1b1e;
+  --color-surface-container: #1f1f22;
+  --color-surface-container-high: #2a2a2d;
+  --color-surface-container-highest: #353438;
+  --color-surface: #131316;
+  --color-surface-dim: #131316;
+  --color-surface-bright: #39393c;
+  --color-background: #131316;
+  --color-outline-variant: #3d494c;
+  --color-outline: #869397;
+  --color-on-surface: #e4e1e6;
+  --color-on-surface-variant: #bcc9cd;
+
+  --color-primary: #4cd7f6;
+  --color-primary-container: #06b6d4;
+  --color-on-primary: #003640;
+  --color-on-primary-container: #00424f;
+  --color-primary-fixed: #acedff;
+  --color-primary-fixed-dim: #4cd7f6;
+
+  --color-secondary: #4edea3;
+  --color-secondary-container: #00a572;
+  --color-on-secondary: #003824;
+  --color-secondary-fixed: #6ffbbe;
+  --color-secondary-fixed-dim: #4edea3;
+
+  --color-tertiary: #ffb95f;
+  --color-tertiary-container: #e79400;
+  --color-on-tertiary: #472a00;
+  --color-tertiary-fixed: #ffddb8;
+  --color-tertiary-fixed-dim: #ffb95f;
+
+  --color-error: #ffb4ab;
+  --color-error-container: #93000a;
+  --color-on-error: #690005;
+
+  --font-sans: "Geist", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+  --font-headline-lg: "Geist", sans-serif;
+  --font-headline-md: "Geist", sans-serif;
+  --font-headline-sm: "Geist", sans-serif;
+  --font-label-metric: "JetBrains Mono", monospace;
+  --font-label-code: "JetBrains Mono", monospace;
+  --font-body-lg: "Geist", sans-serif;
+  --font-body-md: "Geist", sans-serif;
+  --font-body-sm: "Geist", sans-serif;
+}
 
 @layer base {
-  html,
-  body {
+  html, body {
     margin: 0;
     padding: 0;
-    background-color: #090a0d;
-    color: #e6e8ee;
-    font-family: "Geist", sans-serif;
-  }
-  body {
+    background-color: #131316;
+    color: #e4e1e6;
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
     overscroll-behavior: none;
+  }
+  ::-webkit-scrollbar {
+    display: none;
+  }
+  .font-mono, [data-tabular-nums] {
+    font-variant-numeric: tabular-nums;
   }
 }
 
-::-webkit-scrollbar {
-  display: none;
+/* Material Symbols configuration */
+.material-symbols-outlined {
+  font-family: "Material Symbols Outlined" !important;
+  font-weight: normal;
+  font-style: normal;
+  font-size: 18px;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  -webkit-font-smoothing: antialiased;
+  vertical-align: middle;
 }
+
+/* Design System Typography Utilities */
+.font-headline-lg { font-family: "Geist", sans-serif !important; }
+.font-headline-md { font-family: "Geist", sans-serif !important; }
+.font-headline-sm { font-family: "Geist", sans-serif !important; }
+.font-label-metric { font-family: "JetBrains Mono", monospace !important; }
+.font-label-code { font-family: "JetBrains Mono", monospace !important; }
+.font-body-lg { font-family: "Geist", sans-serif !important; }
+.font-body-md { font-family: "Geist", sans-serif !important; }
+.font-body-sm { font-family: "Geist", sans-serif !important; }
+
+.text-headline-lg { font-size: 2.25rem !important; line-height: 2.75rem !important; letter-spacing: -0.03em !important; font-weight: 600 !important; }
+.text-headline-md { font-size: 1.5rem !important; line-height: 2rem !important; letter-spacing: -0.02em !important; font-weight: 500 !important; }
+.text-headline-sm { font-size: 1.125rem !important; line-height: 1.625rem !important; letter-spacing: -0.01em !important; font-weight: 500 !important; }
+.text-label-metric { font-size: 1.75rem !important; line-height: 2rem !important; letter-spacing: -0.03em !important; font-weight: 600 !important; }
+.text-label-code { font-size: 0.75rem !important; line-height: 1rem !important; letter-spacing: 0.04em !important; font-weight: 500 !important; }
+.text-body-lg { font-size: 1rem !important; line-height: 1.625rem !important; letter-spacing: -0.005em !important; font-weight: 400 !important; }
+.text-body-md { font-size: 0.875rem !important; line-height: 1.375rem !important; letter-spacing: 0em !important; font-weight: 400 !important; }
+.text-body-sm { font-size: 0.75rem !important; line-height: 1.125rem !important; letter-spacing: 0.01em !important; font-weight: 400 !important; }
+
+/* Spacing and Dimensions matching reference tokens */
+.p-space-xs { padding: 0.25rem !important; }
+.p-space-sm { padding: 0.5rem !important; }
+.p-space-md { padding: 0.75rem !important; }
+.p-space-lg { padding: 1.25rem !important; }
+.p-space-xl { padding: 2rem !important; }
+
+.px-space-xs { padding-left: 0.25rem !important; padding-right: 0.25rem !important; }
+.px-space-sm { padding-left: 0.5rem !important; padding-right: 0.5rem !important; }
+.px-space-md { padding-left: 0.75rem !important; padding-right: 0.75rem !important; }
+.px-space-lg { padding-left: 1.25rem !important; padding-right: 1.25rem !important; }
+.px-space-xl { padding-left: 2rem !important; padding-right: 2rem !important; }
+
+.py-space-xs { padding-top: 0.25rem !important; padding-bottom: 0.25rem !important; }
+.py-space-sm { padding-top: 0.5rem !important; padding-bottom: 0.5rem !important; }
+.py-space-md { padding-top: 0.75rem !important; padding-bottom: 0.75rem !important; }
+.py-space-lg { padding-top: 1.25rem !important; padding-bottom: 1.25rem !important; }
+.py-space-xl { padding-top: 2rem !important; padding-bottom: 2rem !important; }
+
+.pt-space-xs { padding-top: 0.25rem !important; }
+.pt-space-sm { padding-top: 0.5rem !important; }
+.pt-space-md { padding-top: 0.75rem !important; }
+.pt-space-lg { padding-top: 1.25rem !important; }
+.pt-space-xl { padding-top: 2rem !important; }
+
+.pb-space-xs { padding-bottom: 0.25rem !important; }
+.pb-space-sm { padding-bottom: 0.5rem !important; }
+.pb-space-md { padding-bottom: 0.75rem !important; }
+.pb-space-lg { padding-bottom: 1.25rem !important; }
+.pb-space-xl { padding-bottom: 2rem !important; }
+
+.mb-space-xs { margin-bottom: 0.25rem !important; }
+.mb-space-sm { margin-bottom: 0.5rem !important; }
+.mb-space-md { margin-bottom: 0.75rem !important; }
+.mb-space-lg { margin-bottom: 1.25rem !important; }
+.mb-space-xl { margin-bottom: 2rem !important; }
+
+.mt-space-xs { margin-top: 0.25rem !important; }
+.mt-space-sm { margin-top: 0.5rem !important; }
+.mt-space-md { margin-top: 0.75rem !important; }
+.mt-space-lg { margin-top: 1.25rem !important; }
+.mt-space-xl { margin-top: 2rem !important; }
+
+.gap-space-xs { gap: 0.25rem !important; }
+.gap-space-sm { gap: 0.5rem !important; }
+.gap-space-md { gap: 0.75rem !important; }
+.gap-space-lg { gap: 1.25rem !important; }
+.gap-space-xl { gap: 2rem !important; }
+
+.gap-gutter-md { gap: 1.5rem !important; }
+.gap-gutter-lg { gap: 2rem !important; }
+.gap-gutter { gap: 1rem !important; }
+
+.px-gutter-md { padding-left: 1.5rem !important; padding-right: 1.5rem !important; }
+.px-gutter-lg { padding-left: 2rem !important; padding-right: 2rem !important; }
+.px-gutter { padding-left: 1rem !important; padding-right: 1rem !important; }
+
+@keyframes toastProgress {
+  0% {
+    width: 100%;
+  }
+  100% {
+    width: 0%;
+  }
+}
+
+@keyframes loader-bar {
+  0% { transform: translateX(-100%); }
+  50% { transform: translateX(0%); }
+  100% { transform: translateX(100%); }
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-8px); }
+  40%, 80% { transform: translateX(8px); }
+}
+
+.animate-shake {
+  animation: shake 0.4s ease-in-out;
+}
+
