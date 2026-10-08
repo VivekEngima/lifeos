@@ -202,7 +202,7 @@ export default function DailyTimeAuditSection() {
     }
     const [h, m] = nextStart.split(":").map(Number);
     let endH = (h + 1) % 24;
-    let endM = (m + 30) % 60;
+    const endM = (m + 30) % 60;
     if (m + 30 >= 60) endH = (endH + 1) % 24;
     const nextEnd = `${String(endH).padStart(2, "0")}:${String(endM).padStart(2, "0")}`;
 

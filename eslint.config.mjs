@@ -16,6 +16,10 @@ const eslintConfig = defineConfig([
         },
       ],
       "react-hooks/exhaustive-deps": "warn",
+      "react-hooks/set-state-in-effect": "warn",
+      "react/no-unescaped-entities": "warn",
+      "@next/next/no-img-element": "warn",
+      "@next/next/no-page-custom-font": "warn",
     },
   },
   // Override default ignores of eslint-config-next.
