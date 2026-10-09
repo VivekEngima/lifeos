@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useLifeOS } from "@/context/LifeOSContext";
-import { formatLocalDateString } from "@/lib/date-utils";
+import { formatLocalDateString, formatDayFullWithOrdinal } from "@/lib/date-utils";
 
 export default function DashboardPage() {
   const {
@@ -19,6 +19,7 @@ export default function DashboardPage() {
     deleteSleep,
     deleteExpense,
     togglePlannerTask,
+    toggleYogasanasDaily,
     activeTimer,
     startDeepWorkTimer,
     pauseDeepWorkTimer,
@@ -29,10 +30,13 @@ export default function DashboardPage() {
   } = useLifeOS();
 
   const pune = state?.puneFund ?? null;
+  const yogasanas = state?.yogasanasChallenge ?? null;
   const [showRecentLedgerModal, setShowRecentLedgerModal] = useState(false);
   const [timerTopicInput, setTimerTopicInput] = useState("Engineering Income Work");
   const [timerDescInput, setTimerDescInput] = useState("");
   const [isTimerModalOpen, setIsTimerModalOpen] = useState(false);
+
+  const [showAllProtocolDays, setShowAllProtocolDays] = useState(false);
 
   // Live ticking urgency countdown for Pune Relocation & Sovereignty Fund
   const [mounted, setMounted] = useState(false);
@@ -490,100 +494,300 @@ export default function DashboardPage() {
                 </Link>
               </div>
 
-              {/* Task Items List */}
-              {todayTasks.length > 0 ? (
-                <div className="flex flex-col gap-2 max-h-[340px] overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-outline-variant/40">
-                  {todayTasks.map((task) => {
-                    const isCompleted = task.status === "completed";
-                    const isNoFap = task.category === "nofap";
-                    return (
-                      <div
-                        key={task.id}
-                        onClick={() => togglePlannerTask(task.id, task.status)}
-                        className={`flex items-start gap-2.5 p-2 rounded-lg border transition-all cursor-pointer select-none group/item ${
-                          isCompleted
-                            ? "bg-surface-container-lowest/60 border-outline-variant/30 opacity-60"
-                            : isNoFap
-                            ? "bg-amber-500/5 border-amber-500/30 hover:bg-amber-500/10"
-                            : "bg-surface-container border-outline-variant/40 hover:bg-surface-container-high hover:border-cyan-500/30"
-                        }`}
-                      >
+              {/* ========================================================================= */}
+              {/* DAILY NON-NEGOTIABLE #1: YOGASANAS 8-DAY CADENCE HERO CARD */}
+              {/* ========================================================================= */}
+              {/* ========================================================================= */}
+              {/* DAILY NON-NEGOTIABLE #1: YOGASANAS 8-DAY CADENCE (COMPACT HERO BLOCK) */}
+              {/* ========================================================================= */}
+              {(() => {
+                const completedCount = yogasanas?.completedDays ?? 0;
+                const daysLeft = Math.max(0, 8 - completedCount);
+                const currentDay = yogasanas?.currentDayNumber ?? 1;
+
+                return (
+                  <div className="mb-3 p-3 rounded-xl bg-gradient-to-br from-emerald-950/40 via-surface-container-high/90 to-teal-950/30 border border-emerald-500/40 shadow-sm relative overflow-hidden group/yogasana hover:border-emerald-400/60 transition-all">
+                    {/* Top Row: Non-negotiable Badge + Day 1 of 8 + X days left */}
+                    <div className="flex items-center justify-between gap-2 mb-2">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="text-[10px] font-mono uppercase tracking-wider font-bold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shadow-sm flex items-center gap-1">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                          NON-NEGOTIABLE
+                        </span>
+                        <span className="text-[10px] font-mono uppercase tracking-wider font-semibold text-teal-300 px-1.5 py-0.5 rounded bg-teal-950/60 border border-teal-500/30">
+                          Day {currentDay} of 8
+                        </span>
+                      </div>
+                      <span className="text-[11px] font-mono text-emerald-300 font-bold px-2 py-0.5 rounded bg-emerald-950/70 border border-emerald-500/30">
+                        {daysLeft} {daysLeft === 1 ? "day" : "days"} left
+                      </span>
+                    </div>
+
+                    {/* Main Interactive Row */}
+                    <div
+                      onClick={() => toggleYogasanasDaily()}
+                      className={`p-2 sm:p-2.5 rounded-lg border transition-all cursor-pointer select-none flex items-center justify-between gap-2.5 ${
+                        yogasanas?.isCompletedToday
+                          ? "bg-emerald-950/50 border-emerald-500/60 shadow-[0_0_12px_rgba(16,185,129,0.15)]"
+                          : "bg-surface-container/90 border-outline-variant/60 hover:bg-surface-container-highest hover:border-emerald-400/50"
+                      }`}
+                    >
+                      <div className="flex items-center gap-2.5 min-w-0">
                         <button
                           type="button"
                           onClick={(e) => {
                             e.stopPropagation();
-                            togglePlannerTask(task.id, task.status);
+                            toggleYogasanasDaily();
                           }}
-                          className={`w-4 h-4 rounded mt-0.5 flex items-center justify-center border transition-all shrink-0 ${
-                            isCompleted
-                              ? "bg-emerald-400 border-emerald-400 text-surface"
-                              : isNoFap
-                              ? "border-amber-400/70 hover:border-amber-400"
-                              : "border-outline-variant hover:border-cyan-400"
+                          className={`w-5 h-5 rounded flex items-center justify-center border-2 transition-all shrink-0 cursor-pointer ${
+                            yogasanas?.isCompletedToday
+                              ? "bg-emerald-400 border-emerald-400 text-black shadow-[0_0_10px_rgba(16,185,129,0.6)]"
+                              : "border-emerald-400/60 hover:border-emerald-300 bg-surface-container hover:bg-emerald-500/10"
                           }`}
+                          title={
+                            yogasanas?.isCompletedToday
+                              ? "Completed! Click to uncheck"
+                              : "Click to complete & auto-log as Sadhana in Supabase"
+                          }
                         >
-                          {isCompleted && (
-                            <span className="material-symbols-outlined text-[13px] text-[#00271b] font-bold">
+                          {yogasanas?.isCompletedToday && (
+                            <span className="material-symbols-outlined text-[15px] text-[#00271b] font-bold">
                               check
                             </span>
                           )}
                         </button>
 
-                        <div className="flex-1 min-w-0">
+                        <div className="min-w-0">
                           <div className="flex items-center gap-1.5 flex-wrap">
                             <span
-                              className={`text-xs font-medium truncate ${
-                                isCompleted
-                                  ? "line-through text-on-surface-variant"
-                                  : isNoFap
-                                  ? "text-amber-200 font-semibold"
+                              className={`text-xs font-bold tracking-tight ${
+                                yogasanas?.isCompletedToday
+                                  ? "text-emerald-300 line-through decoration-emerald-500/50"
                                   : "text-on-surface"
                               }`}
                             >
-                              {task.title}
+                              Daily Yogasanas Protocol
                             </span>
-                            {isNoFap && (
-                              <span className="inline-flex items-center gap-0.5 text-[9px] font-mono px-1.5 py-0.2 rounded bg-amber-500/15 text-amber-400 border border-amber-500/30 shrink-0 font-semibold">
-                                <span className="material-symbols-outlined text-[10px]">bolt</span>
-                                NoFap
+                            {yogasanas?.isCompletedToday ? (
+                              <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-bold flex items-center gap-0.5">
+                                <span className="material-symbols-outlined text-[10px]">verified</span>
+                                Logged as Sadhana
                               </span>
-                            )}
-                            {task.timeSlot && (
-                              <span className="text-[10px] font-mono text-on-surface-variant/70 shrink-0">
-                                {task.timeSlot}
+                            ) : (
+                              <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-amber-500/15 text-amber-300 border border-amber-500/30 font-semibold">
+                                Pending
                               </span>
                             )}
                           </div>
-                          {task.description && (
-                            <p className="text-[11px] text-on-surface-variant truncate mt-0.5">
-                              {task.description}
-                            </p>
-                          )}
+                          <p className="text-[10px] font-mono text-on-surface-variant truncate">
+                            {yogasanas?.isCompletedToday
+                              ? "Completed & recorded in Supabase Sadhana ledger."
+                              : "45m Sacred Asana Holding • Tick to auto-log Sadhana"}
+                          </p>
                         </div>
                       </div>
-                    );
-                  })}
-                </div>
-              ) : (
-                <div className="flex flex-col items-center justify-center py-5 text-center gap-2">
-                  <div className="w-10 h-10 rounded-xl bg-surface-container border border-outline-variant/60 flex items-center justify-center text-on-surface-variant">
-                    <span className="material-symbols-outlined text-[20px]">assignment_add</span>
+
+                      <div className="shrink-0 flex items-center gap-1">
+                        {yogasanas?.isCompletedToday ? (
+                          <span className="text-emerald-400 flex items-center gap-1 text-[11px] font-mono font-semibold">
+                            <span className="material-symbols-outlined text-[15px]">done_all</span>
+                            <span className="hidden sm:inline">Done</span>
+                          </span>
+                        ) : (
+                          <span className="px-2 py-0.5 rounded bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/40 text-emerald-300 text-[10px] font-mono flex items-center gap-1 transition-colors">
+                            <span>Log</span>
+                            <span className="material-symbols-outlined text-[11px]">bolt</span>
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Schedule Accordion & 8-Day List */}
+                    <div className="mt-2 pt-1.5 border-t border-emerald-500/20">
+                      <div className="flex items-center justify-between text-[10px] font-mono text-on-surface-variant">
+                        <button
+                          type="button"
+                          onClick={() => setShowAllProtocolDays((prev) => !prev)}
+                          className="text-cyan-400 hover:text-cyan-300 flex items-center gap-1 cursor-pointer transition-colors"
+                        >
+                          <span className="material-symbols-outlined text-[13px] text-emerald-400">calendar_month</span>
+                          <span>8-Day Protocol Schedule</span>
+                          <span className="material-symbols-outlined text-[12px]">
+                            {showAllProtocolDays ? "expand_less" : "expand_more"}
+                          </span>
+                        </button>
+                        <span className="text-emerald-400 font-semibold text-[10px]">
+                          {completedCount}/8 Completed
+                        </span>
+                      </div>
+
+                      {/* Expanded List of all 8 Days in "Monday 1st March 2026" format */}
+                      {showAllProtocolDays && (
+                        <div className="mt-2 flex flex-col gap-1 max-h-[180px] overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-emerald-500/30">
+                          {(yogasanas?.days || []).map((d) => {
+                            const formatted = d.formattedDate || formatDayFullWithOrdinal(d.dateStr);
+                            return (
+                              <div
+                                key={d.dayNumber}
+                                className={`flex items-center justify-between p-1.5 rounded-md border text-[11px] font-mono transition-all ${
+                                  d.isToday
+                                    ? "bg-amber-500/10 border-amber-400/80 shadow-[0_0_8px_rgba(245,158,11,0.15)] ring-1 ring-amber-400/30"
+                                    : d.isCompleted
+                                    ? "bg-emerald-950/30 border-emerald-500/40 text-emerald-200"
+                                    : "bg-surface-container-lowest/60 border-outline-variant/30 text-on-surface-variant"
+                                }`}
+                              >
+                                <div className="flex items-center gap-2 min-w-0">
+                                  <span
+                                    className={`text-[9px] font-bold px-1.5 py-0.2 rounded border shrink-0 ${
+                                      d.isCompleted
+                                        ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/40"
+                                        : d.isToday
+                                        ? "bg-amber-500/20 text-amber-300 border-amber-400"
+                                        : "bg-surface-container text-on-surface-variant border-outline-variant/50"
+                                    }`}
+                                  >
+                                    Day {d.dayNumber}
+                                  </span>
+                                  <span
+                                    className={`truncate font-medium ${
+                                      d.isToday
+                                        ? "text-amber-200 font-bold"
+                                        : d.isCompleted
+                                        ? "text-emerald-300"
+                                        : "text-on-surface"
+                                    }`}
+                                  >
+                                    {formatted}
+                                  </span>
+                                </div>
+
+                                <div className="flex items-center gap-1.5 shrink-0 ml-2">
+                                  {d.isToday && (
+                                    <span className="text-[9px] uppercase px-1 py-0.2 rounded bg-amber-400/20 text-amber-300 border border-amber-400/40 font-bold">
+                                      Today
+                                    </span>
+                                  )}
+                                  {d.isCompleted ? (
+                                    <span className="text-[10px] font-bold text-emerald-400 flex items-center gap-0.5">
+                                      <span className="material-symbols-outlined text-[12px]">check_circle</span>
+                                      <span>Done</span>
+                                    </span>
+                                  ) : (
+                                    <span className="text-[10px] text-on-surface-variant/60">
+                                      {d.isPast ? "Past" : "Pending"}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+
+                      {/* Thin Progress Track */}
+                      <div className="w-full h-1 rounded-full bg-surface-container-highest/80 overflow-hidden mt-1.5">
+                        <div
+                          className="h-full rounded-full bg-gradient-to-r from-emerald-500 via-teal-400 to-cyan-400 transition-all duration-500"
+                          style={{ width: `${Math.min(100, Math.max(0, yogasanas?.pctCompleted ?? 0))}%` }}
+                        />
+                      </div>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-xs font-medium text-on-surface">No tasks planned for today</p>
-                    <p className="text-[11px] font-mono text-on-surface-variant mt-0.5">
-                      Schedule your non-negotiables in Day Blueprint.
+                );
+              })()}
+
+              {/* Task Items List (Additional Blueprint Blocks) */}
+              {(() => {
+                const otherTasks = todayTasks.filter((t) => !t.title.toLowerCase().includes("yogasana"));
+                return otherTasks.length > 0 ? (
+                  <div className="flex flex-col gap-2 max-h-[260px] overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-outline-variant/40">
+                    {otherTasks.map((task) => {
+                      const isCompleted = task.status === "completed";
+                      const isNoFap = task.category === "nofap";
+                      return (
+                        <div
+                          key={task.id}
+                          onClick={() => togglePlannerTask(task.id, task.status)}
+                          className={`flex items-start gap-2.5 p-2 rounded-lg border transition-all cursor-pointer select-none group/item ${
+                            isCompleted
+                              ? "bg-surface-container-lowest/60 border-outline-variant/30 opacity-60"
+                              : isNoFap
+                              ? "bg-amber-500/5 border-amber-500/30 hover:bg-amber-500/10"
+                              : "bg-surface-container border-outline-variant/40 hover:bg-surface-container-high hover:border-cyan-500/30"
+                          }`}
+                        >
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              togglePlannerTask(task.id, task.status);
+                            }}
+                            className={`w-4 h-4 rounded mt-0.5 flex items-center justify-center border transition-all shrink-0 ${
+                              isCompleted
+                                ? "bg-emerald-400 border-emerald-400 text-surface"
+                                : isNoFap
+                                ? "border-amber-400/70 hover:border-amber-400"
+                                : "border-outline-variant hover:border-cyan-400"
+                            }`}
+                          >
+                            {isCompleted && (
+                              <span className="material-symbols-outlined text-[13px] text-[#00271b] font-bold">
+                                check
+                              </span>
+                            )}
+                          </button>
+
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span
+                                className={`text-xs font-medium truncate ${
+                                  isCompleted
+                                    ? "line-through text-on-surface-variant"
+                                    : isNoFap
+                                    ? "text-amber-200 font-semibold"
+                                    : "text-on-surface"
+                                }`}
+                              >
+                                {task.title}
+                              </span>
+                              {isNoFap && (
+                                <span className="inline-flex items-center gap-0.5 text-[9px] font-mono px-1.5 py-0.2 rounded bg-amber-500/15 text-amber-400 border border-amber-500/30 shrink-0 font-semibold">
+                                  <span className="material-symbols-outlined text-[10px]">bolt</span>
+                                  NoFap
+                                </span>
+                              )}
+                              {task.timeSlot && (
+                                <span className="text-[10px] font-mono text-on-surface-variant/70 shrink-0">
+                                  {task.timeSlot}
+                                </span>
+                              )}
+                            </div>
+                            {task.description && (
+                              <p className="text-[11px] text-on-surface-variant truncate mt-0.5">
+                                {task.description}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center py-3 text-center gap-1.5 bg-surface-container/30 rounded-lg border border-dashed border-outline-variant/40">
+                    <p className="text-[11px] font-mono text-on-surface-variant">
+                      No additional blueprint tasks scheduled for today.
                     </p>
+                    <Link
+                      href="/planner"
+                      className="mt-0.5 inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 text-[10px] font-mono transition-colors"
+                    >
+                      <span className="material-symbols-outlined text-[12px]">add</span>
+                      <span>Plan Task in Blueprint</span>
+                    </Link>
                   </div>
-                  <Link
-                    href="/planner"
-                    className="mt-1 flex items-center gap-1 px-3 py-1.5 rounded-md bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 text-xs font-mono font-medium hover:bg-cyan-500/25 transition-colors"
-                  >
-                    <span className="material-symbols-outlined text-[14px]">add</span>
-                    <span>Add Task</span>
-                  </Link>
-                </div>
-              )}
+                );
+              })()}
             </div>
 
             {/* Bottom Execution Bar */}

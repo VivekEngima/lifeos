@@ -6,6 +6,7 @@ import * as schema from "./schema";
 const globalForDb = globalThis as unknown as {
   conn: postgres.Sql | undefined;
   drizzleDb: ReturnType<typeof drizzle<typeof schema>> | undefined;
+  currentUrl: string | undefined;
 };
 
 export function getDb() {
@@ -15,7 +16,12 @@ export function getDb() {
   }
 
   try {
-    if (!globalForDb.conn) {
+    if (!globalForDb.conn || globalForDb.currentUrl !== connectionString) {
+      if (globalForDb.conn) {
+        try {
+          globalForDb.conn.end({ timeout: 1 }).catch(() => {});
+        } catch {}
+      }
       globalForDb.conn = postgres(connectionString, {
         prepare: false, // Required for Supabase transaction pooler (port 6543)
         max: process.env.NODE_ENV === "production" ? 1 : 10,
@@ -24,6 +30,7 @@ export function getDb() {
         ssl: connectionString.includes("sslmode=disable") ? false : "require",
       });
       globalForDb.drizzleDb = drizzle(globalForDb.conn, { schema });
+      globalForDb.currentUrl = connectionString;
     }
     return globalForDb.drizzleDb;
   } catch (error) {

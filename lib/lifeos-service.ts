@@ -1,5 +1,6 @@
 import { getDb, schema } from "@/db";
 import { eq, desc, asc, and, sql } from "drizzle-orm";
+import { formatDayFullWithOrdinal } from "@/lib/date-utils";
 
 export interface DailyTimeBlock {
   id: string;
@@ -13,6 +14,31 @@ export interface DailyTimeBlock {
   shouldHaveDone?: string;
   coachOptimization?: string;
   leverageScore?: number; // 1-10
+}
+
+export interface YogasanasChallengeDay {
+  dayNumber: number; // 1 to 8
+  dateStr: string;
+  dayLabel: string;
+  formattedDate: string; // e.g. "Monday 1st March 2026"
+  dayOfWeek: string;
+  isToday: boolean;
+  isCompleted: boolean;
+  isPast: boolean;
+  isFuture: boolean;
+}
+
+export interface YogasanasChallengeState {
+  targetDays: number;
+  completedDays: number;
+  pctCompleted: number;
+  isCompletedToday: boolean;
+  currentDayNumber: number;
+  days: YogasanasChallengeDay[];
+  todayDateStr: string;
+  startDateStr: string;
+  endDateStr: string;
+  daysRemainingInProtocol: number;
 }
 
 export interface DashboardState {
@@ -270,6 +296,7 @@ export interface DashboardState {
     status: string;
     sortOrder: number;
   }>;
+  yogasanasChallenge?: YogasanasChallengeState;
 }
 
 export function getFinancialMonthlyCycle(dateStr: string) {
@@ -340,6 +367,8 @@ export async function getDashboardState(dateStr: string): Promise<DashboardState
     dbSummary,
     allHabitLogs,
     dbPlannerTasks,
+    allDbWorkouts,
+    allDbPlannerTasks,
   ] = await Promise.all([
     drizzleDb.select().from(schema.financialGoals),
     drizzleDb.select().from(schema.customGoals),
@@ -359,6 +388,8 @@ export async function getDashboardState(dateStr: string): Promise<DashboardState
     drizzleDb.select().from(schema.dailySummary).where(eq(schema.dailySummary.summaryDate, dateStr)).limit(1),
     drizzleDb.select().from(schema.habitLogs).orderBy(desc(schema.habitLogs.logDate)),
     drizzleDb.select().from(schema.plannerTasks).where(eq(schema.plannerTasks.taskDate, dateStr)).orderBy(asc(schema.plannerTasks.sortOrder), asc(schema.plannerTasks.timeSlot)),
+    drizzleDb.select().from(schema.workouts).orderBy(desc(schema.workouts.sessionDate)),
+    drizzleDb.select().from(schema.plannerTasks).orderBy(desc(schema.plannerTasks.taskDate)),
   ]);
 
   // 1. Primary Horizon (Pune Fund)
@@ -755,6 +786,95 @@ export async function getDashboardState(dateStr: string): Promise<DashboardState
   const disciplineRating = summary?.disciplineRating ?? 0;
   const dayIntegrityScore = summary ? Number(summary.dayIntegrityScore) : Number(((pillarsMet / 6) * 10).toFixed(1));
 
+  // 12. 8-Day Yogasanas Cadence Protocol
+  const isYogasanaWorkout = (w: (typeof schema.workouts)["$inferSelect"]) => {
+    const type = (w.type || "").toLowerCase();
+    const desc = (w.description || "").toLowerCase();
+    const prac = (w.practices || "").toLowerCase();
+    return type.includes("yogasana") || desc.includes("yogasana") || prac.includes("yogasana");
+  };
+
+  const isYogasanaTask = (t: (typeof schema.plannerTasks)["$inferSelect"]) => {
+    const title = (t.title || "").toLowerCase();
+    return title.includes("yogasana");
+  };
+
+  const yogasanaWorkouts = allDbWorkouts.filter(isYogasanaWorkout);
+  const yogasanaTasks = allDbPlannerTasks.filter(isYogasanaTask);
+
+  const yogasanaDates = Array.from(
+    new Set([
+      ...yogasanaWorkouts.map((w) => String(w.sessionDate).split("T")[0]),
+      ...yogasanaTasks.map((t) => String(t.taskDate).split("T")[0]),
+    ])
+  )
+    .filter(Boolean)
+    .sort();
+
+  // 8-Day Protocol starts from today (Day 1 of 8)
+  const startChallengeDate = dateStr;
+  const startDateObj = new Date(startChallengeDate + "T00:00:00Z");
+  const challengeDays: YogasanasChallengeDay[] = [];
+  let challengeCompletedCount = 0;
+
+  const challengeMonthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const challengeDayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+  for (let i = 0; i < 8; i++) {
+    const dObj = new Date(startDateObj.getTime() + i * 24 * 60 * 60 * 1000);
+    const curDateStr = dObj.toISOString().split("T")[0];
+
+    const workoutForDay = yogasanaWorkouts.find(
+      (w) => String(w.sessionDate).split("T")[0] === curDateStr
+    );
+    const taskForDay = yogasanaTasks.find(
+      (t) => String(t.taskDate).split("T")[0] === curDateStr
+    );
+    const isCompleted = Boolean(
+      workoutForDay || (taskForDay && taskForDay.status === "completed")
+    );
+
+    if (isCompleted) {
+      challengeCompletedCount++;
+    }
+
+    const isToday = curDateStr === dateStr;
+    const isPast = curDateStr < dateStr;
+    const isFuture = curDateStr > dateStr;
+
+    challengeDays.push({
+      dayNumber: i + 1,
+      dateStr: curDateStr,
+      dayLabel: `${challengeMonthNames[dObj.getUTCMonth()]} ${dObj.getUTCDate()}`,
+      formattedDate: formatDayFullWithOrdinal(curDateStr),
+      dayOfWeek: challengeDayNames[dObj.getUTCDay()],
+      isToday,
+      isCompleted,
+      isPast,
+      isFuture,
+    });
+  }
+
+  const currentChallengeDay = challengeDays.find((d) => d.isToday);
+  const currentDayNumber = currentChallengeDay ? currentChallengeDay.dayNumber : 1;
+  const isCompletedToday = currentChallengeDay ? currentChallengeDay.isCompleted : false;
+  const startDateStr = challengeDays.length > 0 ? challengeDays[0].dateStr : dateStr;
+  const endDateStr = challengeDays.length > 0 ? challengeDays[challengeDays.length - 1].dateStr : dateStr;
+  const daysRemainingInProtocol = Math.max(0, 8 - challengeCompletedCount);
+
+  const yogasanasChallenge: YogasanasChallengeState = {
+    targetDays: 8,
+    completedDays: challengeCompletedCount,
+    pctCompleted: Math.min(100, Math.round((challengeCompletedCount / 8) * 100)),
+    isCompletedToday,
+    currentDayNumber,
+    days: challengeDays,
+    todayDateStr: dateStr,
+    startDateStr,
+    endDateStr,
+    daysRemainingInProtocol,
+  };
+
   return {
     date: dateStr,
     isDbConnected: true,
@@ -837,6 +957,7 @@ export async function getDashboardState(dateStr: string): Promise<DashboardState
     pillarsTotal: 6,
     isLocked: summary?.isLocked ?? false,
     todayTasks: dbPlannerTasks || [],
+    yogasanasChallenge,
   };
 }
 

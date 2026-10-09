@@ -4,13 +4,11 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useLifeOS } from "@/context/LifeOSContext";
-import { useAuth } from "@/components/AuthGuard";
 
-import { getLocalTodayStr, formatLocalDateString } from "@/lib/date-utils";
+import { getLocalTodayStr, formatLocalDateString, formatDayFullWithOrdinal } from "@/lib/date-utils";
 
 export default function Navigation() {
   const pathname = usePathname();
-  const { lockApp } = useAuth();
   const {
     state,
     selectedDate,
@@ -62,31 +60,40 @@ export default function Navigation() {
             </Link>
 
             {/* Date Navigator */}
-            <div className="flex items-center gap-1 bg-surface-container border border-outline-variant/60 rounded-md px-2 py-1 text-xs font-mono">
+            <div className="flex items-center gap-1.5 bg-surface-container border border-outline-variant/60 rounded-md px-2 py-1 text-xs font-mono">
               <button
                 onClick={goToPreviousDay}
                 title="Previous Day"
-                className="w-5 h-5 flex items-center justify-center text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high rounded transition-colors"
+                className="w-5 h-5 flex items-center justify-center text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high rounded transition-colors cursor-pointer"
               >
                 ◀
               </button>
-              <input
-                type="date"
-                value={selectedDate}
-                onChange={(e) =>
-                  e.target.value && setSelectedDate(e.target.value)
-                }
-                className="bg-transparent text-on-surface text-xs font-mono focus:outline-none cursor-pointer px-1 py-0.5"
-              />
+              
+              <div className="relative flex items-center cursor-pointer group/date px-1.5 py-0.5 rounded hover:bg-surface-container-high transition-colors">
+                <span className="text-on-surface text-xs font-mono font-semibold flex items-center gap-1.5 select-none group-hover/date:text-cyan-300 transition-colors">
+                  <span className="material-symbols-outlined text-[14px] text-cyan-400">calendar_today</span>
+                  <span className="whitespace-nowrap">{formatDayFullWithOrdinal(selectedDate)}</span>
+                </span>
+                <input
+                  type="date"
+                  value={selectedDate}
+                  onChange={(e) =>
+                    e.target.value && setSelectedDate(e.target.value)
+                  }
+                  className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                  title="Click to select date"
+                />
+              </div>
+
               <button
                 onClick={goToNextDay}
                 title="Next Day"
-                className="w-5 h-5 flex items-center justify-center text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high rounded transition-colors"
+                className="w-5 h-5 flex items-center justify-center text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high rounded transition-colors cursor-pointer"
               >
                 ▶
               </button>
               {isToday ? (
-                <span className="ml-1.5 px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 flex items-center gap-1 shadow-[0_0_8px_rgba(6,182,212,0.25)]">
+                <span className="ml-1 px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 flex items-center gap-1 shadow-[0_0_8px_rgba(6,182,212,0.25)]">
                   <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
                   Today
                 </span>
@@ -94,7 +101,7 @@ export default function Navigation() {
                 <button
                   onClick={goToToday}
                   title="Return to today's date"
-                  className="ml-1.5 px-2 py-0.5 rounded text-[10px] font-mono font-medium text-cyan-400 bg-surface-container-high hover:bg-surface-container-highest border border-cyan-500/30 hover:border-cyan-500/60 transition-colors flex items-center gap-1 cursor-pointer"
+                  className="ml-1 px-2 py-0.5 rounded text-[10px] font-mono font-medium text-cyan-400 bg-surface-container-high hover:bg-surface-container-highest border border-cyan-500/30 hover:border-cyan-500/60 transition-colors flex items-center gap-1 cursor-pointer"
                 >
                   <span className="material-symbols-outlined text-[12px]">
                     replay
@@ -165,19 +172,6 @@ export default function Navigation() {
               <span className="hidden sm:inline">Log Expense</span>
             </button>
 
-            {/* Lock Session Trigger */}
-            <button
-              onClick={lockApp}
-              className="flex items-center gap-1 px-2.5 py-1.5 rounded-md bg-surface-container hover:bg-amber-500/10 border border-outline-variant hover:border-amber-500/40 text-on-surface-variant hover:text-amber-300 text-xs font-mono transition-colors cursor-pointer"
-              title="Lock LifeOS (Requires PIN XXXXX to unlock)"
-              type="button"
-            >
-              <span className="material-symbols-outlined text-[15px]">
-                lock
-              </span>
-              <span className="hidden sm:inline">Lock</span>
-            </button>
-
             {/* DB Status / Settings Trigger */}
             <div className="relative">
               <button
@@ -232,18 +226,6 @@ export default function Navigation() {
                     className="w-full text-left px-3 py-2 text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors"
                   >
                     Quick Check-in (⌘L)
-                  </button>
-                  <button
-                    onClick={() => {
-                      setUserMenuOpen(false);
-                      lockApp();
-                    }}
-                    className="w-full text-left px-3 py-2 text-amber-300 hover:text-amber-200 hover:bg-amber-500/10 transition-colors flex items-center gap-1.5 font-mono"
-                  >
-                    <span className="material-symbols-outlined text-[14px]">
-                      lock
-                    </span>
-                    Lock Vault Now
                   </button>
                   <div className="border-t border-outline-variant/60 my-1" />
                   <div className="px-3 py-1.5 text-[10px] font-mono text-on-surface-variant">

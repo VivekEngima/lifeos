@@ -223,6 +223,7 @@ interface LifeOSContextType {
   updateCustomGoal: (id: string, goal: any) => Promise<void>;
   deleteCustomGoal: (id: string) => Promise<void>;
   togglePlannerTask: (taskId: string, currentStatus: string) => Promise<void>;
+  toggleYogasanasDaily: (targetDate?: string) => Promise<void>;
 }
 
 const LifeOSContext = createContext<LifeOSContextType | undefined>(undefined);
@@ -422,7 +423,10 @@ export function LifeOSProvider({ children }: { children: React.ReactNode }) {
     try {
       setLoading(true);
       const res = await fetch(`/api/dashboard?date=${selectedDate}`);
-      if (!res.ok) throw new Error("Failed to fetch state from Supabase");
+      if (!res.ok) {
+        const errJson = await res.json().catch(() => null);
+        throw new Error(errJson?.details || errJson?.error || "Failed to fetch state from Supabase");
+      }
       const data: DashboardState = await res.json();
       setState(data);
       setError(null);
@@ -1410,6 +1414,35 @@ export function LifeOSProvider({ children }: { children: React.ReactNode }) {
         body: JSON.stringify({ id: taskId, status: nextStatus }),
       });
       if (!res.ok) throw new Error("Failed to update task status");
+
+      if (nextStatus === "completed") {
+        const task = state?.todayTasks?.find((t) => t.id === taskId);
+        if (task && task.title.toLowerCase().includes("yogasana")) {
+          const workout = state?.workoutToday;
+          const alreadyLogged =
+            workout &&
+            (workout.type.includes("yogasana") ||
+              workout.description.toLowerCase().includes("yogasana") ||
+              workout.practices?.some((p) => p.includes("yogasana")));
+          if (!alreadyLogged) {
+            fetch("/api/workout", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                sessionDate: selectedDate,
+                type: "yogasanas",
+                description: "Daily Non-Negotiable Yogasanas (8-Day Protocol)",
+                durationMinutes: 45,
+                asanaHoldingCount: 60,
+                practices: ["yogasanas"],
+                quality: "Zone 3/4 Physical",
+              }),
+            })
+              .then(() => refreshState())
+              .catch(() => {});
+          }
+        }
+      }
     } catch (err) {
       console.error("Error toggling planner task:", err);
       setState((prev) => {
@@ -1423,6 +1456,82 @@ export function LifeOSProvider({ children }: { children: React.ReactNode }) {
       });
       notify("Failed to Update Task", "Could not sync with database", "error");
     }
+  };
+
+  const toggleYogasanasDaily = async (targetDate?: string) => {
+    const dStr = targetDate || selectedDate;
+    const isCompleted = state?.yogasanasChallenge?.isCompletedToday ?? false;
+
+    await withLoading(async () => {
+      try {
+        if (!isCompleted) {
+          // 1. Auto-log Workout / Sadhana to Supabase
+          const workoutRes = await fetch("/api/workout", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              sessionDate: dStr,
+              type: "yogasanas",
+              description: "Daily Non-Negotiable Yogasanas (8-Day Protocol)",
+              durationMinutes: 45,
+              asanaHoldingCount: 60,
+              practices: ["yogasanas"],
+              quality: "Zone 3/4 Physical",
+            }),
+          });
+          if (!workoutRes.ok) throw new Error("Failed to auto-log Sadhana");
+
+          // 2. Also synchronize any matching planner task
+          const matchingTask = state?.todayTasks?.find(
+            (t) => t.title.toLowerCase().includes("yogasana") && t.status !== "completed"
+          );
+          if (matchingTask) {
+            await fetch("/api/planner/tasks", {
+              method: "PUT",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ id: matchingTask.id, status: "completed" }),
+            });
+          }
+
+          notify(
+            "Sadhana Auto-Logged 🧘",
+            `Daily Yogasanas recorded in Supabase for ${dStr}! 8-Day streak updated.`,
+            "success"
+          );
+        } else {
+          // If already completed and user clicks to uncheck:
+          const workout = state?.workoutToday;
+          const isYogasana =
+            workout &&
+            (workout.type.includes("yogasana") ||
+              workout.description.toLowerCase().includes("yogasana") ||
+              workout.practices?.some((p) => p.includes("yogasana")));
+
+          if (isYogasana && workout.id) {
+            await fetch(`/api/workout?id=${workout.id}`, { method: "DELETE" });
+          }
+
+          const matchingTask = state?.todayTasks?.find(
+            (t) => t.title.toLowerCase().includes("yogasana") && t.status === "completed"
+          );
+          if (matchingTask) {
+            await fetch("/api/planner/tasks", {
+              method: "PUT",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ id: matchingTask.id, status: "pending" }),
+            });
+          }
+
+          notify("Sadhana Unchecked", `Yogasanas status unchecked for ${dStr}`, "info");
+        }
+
+        await refreshState();
+      } catch (err: unknown) {
+        const e = err as Error;
+        console.error("Error toggling daily yogasanas:", e);
+        notify("Action Failed", e?.message || "Could not update daily yogasanas", "error");
+      }
+    });
   };
 
   return (
@@ -1500,6 +1609,7 @@ export function LifeOSProvider({ children }: { children: React.ReactNode }) {
         updateBook,
         deleteBook,
         togglePlannerTask,
+        toggleYogasanasDaily,
       }}
     >
       {children}
