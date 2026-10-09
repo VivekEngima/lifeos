@@ -18,9 +18,10 @@ export function getDb() {
     if (!globalForDb.conn) {
       globalForDb.conn = postgres(connectionString, {
         prepare: false, // Required for Supabase transaction pooler (port 6543)
-        max: 10,
+        max: process.env.NODE_ENV === "production" ? 1 : 10,
         idle_timeout: 20,
-        connect_timeout: 10,
+        connect_timeout: 15,
+        ssl: connectionString.includes("sslmode=disable") ? false : "require",
       });
       globalForDb.drizzleDb = drizzle(globalForDb.conn, { schema });
     }

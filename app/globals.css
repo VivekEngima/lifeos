@@ -189,3 +189,25 @@
   animation: shake 0.4s ease-in-out;
 }
 
+/* Prevent browser white autofill and selection highlighting on inputs */
+input:-webkit-autofill,
+input:-webkit-autofill:hover, 
+input:-webkit-autofill:focus, 
+input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 1000px #1b1b1e inset !important;
+  -webkit-text-fill-color: #fde68a !important;
+  caret-color: #f59e0b !important;
+  transition: background-color 5000s ease-in-out 0s;
+}
+
+input::-ms-reveal,
+input::-ms-clear {
+  display: none;
+}
+
+.pin-input-box {
+  -webkit-text-security: disc;
+  caret-color: #f59e0b !important;
+}
+
+

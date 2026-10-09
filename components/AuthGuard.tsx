@@ -55,7 +55,6 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
     if (mounted && !isAuthenticated) {
       const timer = setTimeout(() => {
         inputRefs.current[0]?.focus();
-        inputRefs.current[0]?.select();
       }, 80);
       return () => clearTimeout(timer);
     }
@@ -259,25 +258,38 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
                   ref={(el) => {
                     inputRefs.current[idx] = el;
                   }}
-                  type="password"
+                  type="text"
                   inputMode="numeric"
                   pattern="[0-9]*"
                   maxLength={1}
-                  autoComplete="off"
+                  autoComplete="one-time-code"
+                  spellCheck={false}
+                  autoCorrect="off"
+                  autoCapitalize="off"
                   disabled={isSuccess}
                   value={pinDigits[idx]}
                   onChange={(e) => handleChange(idx, e.target.value)}
                   onKeyDown={(e) => handleKeyDown(idx, e)}
                   onPaste={handlePaste}
-                  onFocus={(e) => e.target.select()}
-                  className={`w-10 sm:w-11 h-12 rounded-xl text-center text-lg font-mono font-bold transition-all outline-none border-2 ${
-                    isSuccess
-                      ? "bg-emerald-500/20 border-emerald-400 text-emerald-300 shadow-[0_0_10px_rgba(16,185,129,0.3)]"
+                  style={{
+                    backgroundColor: isSuccess
+                      ? "rgba(16, 185, 129, 0.2)"
                       : isShaking
-                      ? "bg-red-500/15 border-red-500 text-red-400"
+                      ? "rgba(239, 68, 68, 0.15)"
                       : hasVal
-                      ? "bg-amber-500/10 border-amber-400/80 text-amber-300 shadow-[0_0_10px_rgba(245,158,11,0.2)]"
-                      : "bg-surface-container border-outline-variant/60 focus:border-amber-400 focus:bg-surface-container-high text-on-surface focus:shadow-[0_0_12px_rgba(245,158,11,0.25)]"
+                      ? "rgba(245, 158, 11, 0.12)"
+                      : "#1f1f22",
+                    color: "#fde68a",
+                    caretColor: "#f59e0b",
+                  }}
+                  className={`pin-input-box w-10 sm:w-11 h-12 rounded-xl text-center text-xl font-mono font-bold transition-all outline-none border-2 select-none ${
+                    isSuccess
+                      ? "border-emerald-400 text-emerald-300 shadow-[0_0_12px_rgba(16,185,129,0.3)]"
+                      : isShaking
+                      ? "border-red-500 text-red-400 shadow-[0_0_10px_rgba(239,68,68,0.3)]"
+                      : hasVal
+                      ? "border-amber-400/90 text-amber-300 shadow-[0_0_10px_rgba(245,158,11,0.2)]"
+                      : "border-outline-variant/60 focus:border-amber-400 text-amber-200 focus:shadow-[0_0_12px_rgba(245,158,11,0.25)]"
                   }`}
                 />
               );

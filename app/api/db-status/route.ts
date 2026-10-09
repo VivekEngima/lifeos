@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { getDb, schema } from "@/db";
 
+export const dynamic = "force-dynamic";
+
 export async function GET() {
   const dbUrl = process.env.DATABASE_URL;
   if (!dbUrl || dbUrl.trim() === "" || dbUrl.includes("YOUR_PASSWORD")) {
