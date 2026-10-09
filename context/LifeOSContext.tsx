@@ -438,12 +438,17 @@ export function LifeOSProvider({ children }: { children: React.ReactNode }) {
   const checkDbStatus = useCallback(async () => {
     try {
       const res = await fetch("/api/db-status");
-      if (res.ok) {
-        const data = await res.json();
-        setDbStatus(data);
-      }
-    } catch (err) {
-      console.warn("Failed to check DB status", err);
+      const data = await res.json();
+      setDbStatus(data);
+    } catch (err: unknown) {
+      const e = err as Error;
+      console.warn("Failed to check DB status", e);
+      setDbStatus({
+        configured: false,
+        connected: false,
+        message: `Connection status check failed: ${e?.message || String(err)}`,
+        dbUrlMasked: null,
+      });
     }
   }, []);
 

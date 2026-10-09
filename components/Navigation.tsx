@@ -198,17 +198,21 @@ export default function Navigation() {
                     <p className="font-medium text-on-surface">
                       Supabase Connection
                     </p>
-                    <p className="text-[11px] font-mono text-on-surface-variant flex items-center gap-1 mt-0.5">
+                    <p className="text-[11px] font-mono text-on-surface-variant flex items-center gap-1.5 mt-0.5">
                       <span
                         className={`w-1.5 h-1.5 rounded-full ${
-                          dbStatus?.connected
+                          dbStatus === null
+                            ? "bg-amber-400 animate-pulse"
+                            : dbStatus.connected
                             ? "bg-emerald-400"
-                            : "bg-amber-400"
+                            : "bg-rose-500"
                         }`}
                       />
-                      {dbStatus?.connected
+                      {dbStatus === null
+                        ? "Connecting..."
+                        : dbStatus.connected
                         ? "PostgreSQL Active"
-                        : "Connecting..."}
+                        : "Disconnected"}
                     </p>
                   </div>
                   <button

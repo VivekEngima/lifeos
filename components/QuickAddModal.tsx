@@ -1717,16 +1717,41 @@ export default function QuickAddModal() {
                 <span className="text-xs uppercase text-[#a1a1aa] font-semibold tracking-wider">
                   Supabase &amp; Drizzle Connection Status
                 </span>
-                <span className="px-2.5 py-0.5 rounded-[4px] text-xs font-bold bg-[#10b981]/15 text-[#10b981] border border-[#10b981]/30">
-                  CONNECTED
-                </span>
+                {dbStatus === null ? (
+                  <span className="px-2.5 py-0.5 rounded-[4px] text-xs font-bold bg-amber-500/15 text-amber-400 border border-amber-500/30 flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+                    CHECKING...
+                  </span>
+                ) : dbStatus.connected ? (
+                  <span className="px-2.5 py-0.5 rounded-[4px] text-xs font-bold bg-[#10b981]/15 text-[#10b981] border border-[#10b981]/30 flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                    CONNECTED
+                  </span>
+                ) : (
+                  <span className="px-2.5 py-0.5 rounded-[4px] text-xs font-bold bg-rose-500/15 text-rose-400 border border-rose-500/30 flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
+                    DISCONNECTED
+                  </span>
+                )}
               </div>
-              <p className="text-xs text-[#d4d4d8] leading-relaxed">
-                {dbStatus?.message || "Successfully connected to Supabase PostgreSQL via Drizzle ORM!"}
+              <p className={`text-xs leading-relaxed ${dbStatus?.connected ? "text-[#d4d4d8]" : "text-rose-300 font-mono"}`}>
+                {dbStatus === null
+                  ? "Testing connection to Supabase database..."
+                  : dbStatus.message || (dbStatus.connected ? "Successfully connected to Supabase PostgreSQL via Drizzle ORM!" : "Database connection failed.")}
               </p>
               {dbStatus?.dbUrlMasked && (
                 <div className="text-xs text-[#71717a] truncate font-mono">
                   Configured: {dbStatus.dbUrlMasked}
+                </div>
+              )}
+              {dbStatus && !dbStatus.connected && (
+                <div className="mt-2 p-2.5 rounded bg-rose-950/30 border border-rose-500/20 text-[11px] text-rose-300/90 font-mono space-y-1">
+                  <div className="font-bold text-rose-300 flex items-center gap-1">
+                    <span className="material-symbols-outlined text-[14px]">warning</span>
+                    Troubleshooting Guide:
+                  </div>
+                  <div>• Ensure your Supabase password is correct (reset in Supabase Dashboard $\rightarrow$ Settings $\rightarrow$ Database if needed).</div>
+                  <div>• For serverless/Vercel, use the Transaction Pooler URL (port 6543): <code>aws-0-[region].pooler.supabase.com:6543</code>.</div>
                 </div>
               )}
             </div>
