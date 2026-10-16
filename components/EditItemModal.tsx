@@ -3,6 +3,9 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useLifeOS } from "@/context/LifeOSContext";
 import { ButtonSpinner } from "@/components/ButtonSpinner";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { DatePicker } from "@/components/ui/date-picker";
 
 export default function EditItemModal() {
   const {
@@ -166,31 +169,16 @@ export default function EditItemModal() {
   };
 
   return (
-    <div
-      onClick={(e) => {
-        if (e.target === e.currentTarget) closeEditModal();
-      }}
-      className="fixed inset-0 z-50 bg-[#090a0d]/80 backdrop-blur-sm flex items-center justify-center p-4"
-    >
-      <div
-        className="bg-surface-container-low rounded-xl max-w-md w-full p-5 border border-outline-variant/80 shadow-2xl relative max-h-[90vh] overflow-y-auto"
-      >
-        <div className="flex items-center justify-between pb-3.5 mb-4 border-b border-outline-variant/60">
-          <div className="flex items-center gap-2.5">
-            <span className="material-symbols-outlined text-primary text-[22px]">edit_note</span>
-            <h3 className="text-base sm:text-lg font-bold text-on-surface">{getTitle()}</h3>
+    <Dialog open={Boolean(editModal?.type)} onOpenChange={(open) => { if (!open) closeEditModal(); }}>
+      <DialogContent className={`bg-surface-container-low border border-outline-variant/80 p-0 overflow-hidden max-h-[82vh] sm:max-h-[80vh] flex flex-col ${type === "sleep" ? "max-w-2xl" : "max-w-md"}`}>
+        <DialogHeader className="p-3.5 sm:p-4 border-b border-outline-variant/60 flex flex-row items-center justify-between space-y-0 shrink-0">
+          <div className="flex items-center gap-2">
+            <span className="material-symbols-outlined text-primary text-[20px]">edit_note</span>
+            <DialogTitle className="text-sm sm:text-base font-bold text-on-surface">{getTitle()}</DialogTitle>
           </div>
-          <button
-            onClick={closeEditModal}
-            className="text-on-surface-variant hover:text-on-surface transition-colors p-1.5 rounded-lg hover:bg-surface-container"
-            type="button"
-            aria-label="Close modal"
-          >
-            <span className="material-symbols-outlined text-[20px]">close</span>
-          </button>
-        </div>
+        </DialogHeader>
 
-        <form onSubmit={handleSave} className="space-y-4 text-sm font-mono">
+        <form onSubmit={handleSave} className="flex-1 min-h-0 overflow-y-auto p-3.5 sm:p-4 space-y-3 text-xs font-mono">
           {/* WORKOUT */}
           {type === "workout" && (() => {
             const currentPractices: string[] = Array.isArray(formData.practices)
@@ -273,10 +261,41 @@ export default function EditItemModal() {
                 {(hasSK || hasYog) && (
                   <div className={`grid gap-3 ${hasSK && hasYog ? "grid-cols-2" : "grid-cols-1"}`}>
                     {hasSK && (
-                      <div className="bg-amber-500/10 border border-amber-500/30 p-3 rounded-lg">
-                        <label className="text-xs font-bold uppercase tracking-wider text-amber-300 block mb-1">
-                          Surya Kriya Cycles
-                        </label>
+                      <div className="bg-amber-500/10 border border-amber-500/30 p-3 rounded-lg flex flex-col gap-2">
+                        <div className="flex items-center justify-between">
+                          <label className="text-xs font-bold uppercase tracking-wider text-amber-300 block">
+                            Surya Kriya Cycles
+                          </label>
+                          <span className="text-[11px] font-mono text-amber-400 font-bold">
+                            {formData.suryaKriyaCycles ?? formData.cycles ?? 3} cycles
+                          </span>
+                        </div>
+                        {/* Preset Buttons */}
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="text-[10px] font-mono text-amber-300/80 uppercase tracking-wider mr-1">
+                            Cycles:
+                          </span>
+                          {[1, 3, 6, 7, 9, 11, 12].map((cycleVal) => {
+                            const currentVal = formData.suryaKriyaCycles ?? formData.cycles ?? 3;
+                            return (
+                              <button
+                                key={cycleVal}
+                                type="button"
+                                onClick={() => {
+                                  handleChange("suryaKriyaCycles", cycleVal);
+                                  handleChange("cycles", cycleVal);
+                                }}
+                                className={`px-2.5 py-0.5 rounded text-xs font-mono font-bold transition-all cursor-pointer ${
+                                  currentVal === cycleVal
+                                    ? "bg-amber-400 text-slate-950 shadow-[0_0_8px_rgba(251,191,36,0.4)]"
+                                    : "bg-surface-container border border-amber-500/30 text-amber-200 hover:bg-amber-500/20"
+                                }`}
+                              >
+                                {cycleVal}
+                              </button>
+                            );
+                          })}
+                        </div>
                         <input
                           type="number"
                           min="1"
@@ -286,7 +305,7 @@ export default function EditItemModal() {
                             handleChange("suryaKriyaCycles", val);
                             handleChange("cycles", val);
                           }}
-                          className="w-full bg-surface-container border border-outline-variant/60 rounded px-3 py-2 text-sm text-on-surface focus:outline-none focus:border-amber-400 font-bold"
+                          className="w-full bg-surface-container border border-outline-variant/60 rounded px-3 py-2 text-sm text-on-surface focus:outline-none focus:border-amber-400 font-bold font-mono"
                         />
                       </div>
                     )}
@@ -313,7 +332,7 @@ export default function EditItemModal() {
                 {hasSham && (
                   <div className="p-2.5 rounded-lg bg-cyan-950/30 border border-cyan-500/30 text-xs text-cyan-300 flex items-center gap-2">
                     <span className="material-symbols-outlined text-[16px] text-cyan-400">check_circle</span>
-                    <span>Shambhavi Mahamudra Kriya (21m protocol active)</span>
+                    <span>Shambhavi Mahamudra Kriya (Sacred protocol active)</span>
                   </div>
                 )}
 
@@ -449,53 +468,47 @@ export default function EditItemModal() {
           {/* SLEEP */}
           {type === "sleep" && (
             <>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                 <div>
-                  <label className="text-on-surface-variant block mb-1">Start Date (Bedtime Date)</label>
-                  <input
-                    type="date"
+                  <label className="text-[11px] text-on-surface-variant block mb-1">Start Date (Bedtime Date)</label>
+                  <DatePicker
                     value={formData.startDate ?? ""}
-                    onChange={(e) => handleChange("startDate", e.target.value)}
-                    className="w-full bg-surface-container border border-outline-variant/60 rounded px-3 py-2 text-on-surface focus:outline-none focus:border-primary"
-                    required
+                    onChange={(val) => handleChange("startDate", val)}
                   />
                 </div>
                 <div>
-                  <label className="text-on-surface-variant block mb-1">End Date (Wake Date)</label>
-                  <input
-                    type="date"
+                  <label className="text-[11px] text-on-surface-variant block mb-1">End Date (Wake Date)</label>
+                  <DatePicker
                     value={formData.endDate ?? ""}
-                    onChange={(e) => handleChange("endDate", e.target.value)}
-                    className="w-full bg-surface-container border border-outline-variant/60 rounded px-3 py-2 text-on-surface focus:outline-none focus:border-primary"
-                    required
+                    onChange={(val) => handleChange("endDate", val)}
                   />
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-2.5">
                 <div>
-                  <label className="text-on-surface-variant block mb-1">Total Sleep (Minutes)</label>
+                  <label className="text-[11px] text-on-surface-variant block mb-1">Total Sleep (Minutes)</label>
                   <input
                     type="number"
                     value={formData.durationMinutes ?? ""}
                     onChange={(e) => handleChange("durationMinutes", e.target.value)}
-                    className="w-full bg-surface-container border border-outline-variant/60 rounded px-3 py-2 text-on-surface focus:outline-none focus:border-primary"
+                    className="w-full bg-surface-container border border-outline-variant/60 rounded px-2.5 py-1.5 text-xs text-on-surface focus:outline-none focus:border-primary"
                     placeholder="e.g. 450 (7h 30m)"
                     required
                   />
                   {formData.durationMinutes ? (
-                    <span className="text-[10px] text-cyan-400 font-mono mt-1 block">
+                    <span className="text-[10px] text-cyan-400 font-mono mt-0.5 block">
                       = {Math.floor(formData.durationMinutes / 60)}h {formData.durationMinutes % 60}m
                     </span>
                   ) : null}
                 </div>
                 <div>
-                  <label className="text-on-surface-variant block mb-1">Restorative Ratio (%)</label>
+                  <label className="text-[11px] text-on-surface-variant block mb-1">Restorative Ratio (%)</label>
                   <input
                     type="number"
                     value={formData.quality ?? ""}
                     onChange={(e) => handleChange("quality", e.target.value)}
-                    className="w-full bg-surface-container border border-outline-variant/60 rounded px-3 py-2 text-on-surface focus:outline-none focus:border-primary"
+                    className="w-full bg-surface-container border border-outline-variant/60 rounded px-2.5 py-1.5 text-xs text-on-surface focus:outline-none focus:border-primary"
                     min="0"
                     max="100"
                     placeholder="e.g. 85"
@@ -715,25 +728,25 @@ export default function EditItemModal() {
             </div>
           )}
 
-          <div className="flex justify-end gap-2.5 pt-3 border-t border-outline-variant/60">
+          <div className="sticky bottom-0 bg-surface-container-low/95 backdrop-blur-sm -mx-3.5 -mb-3.5 sm:-mx-4 sm:-mb-4 p-2.5 px-3.5 sm:px-4 border-t border-outline-variant/60 flex justify-end gap-2 shrink-0 z-10">
             <button
               type="button"
               onClick={closeEditModal}
-              className="px-3 py-1.5 rounded bg-surface-container hover:bg-surface-container-high border border-outline-variant text-on-surface transition-colors"
+              className="px-3 py-1.5 rounded bg-surface-container hover:bg-surface-container-high border border-outline-variant text-on-surface text-xs transition-colors"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isSaving}
-              className="px-4 py-1.5 rounded bg-primary text-on-primary font-semibold hover:bg-primary-fixed-dim transition-all shadow-sm active:scale-95 flex items-center gap-2 disabled:opacity-60"
+              className="px-4 py-1.5 rounded bg-primary text-on-primary font-semibold text-xs hover:bg-primary-fixed-dim transition-all shadow-sm active:scale-95 flex items-center gap-1.5 disabled:opacity-60"
             >
               {isSaving && <ButtonSpinner />}
               <span>{isSaving ? "Saving..." : "Save Changes"}</span>
             </button>
           </div>
         </form>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }

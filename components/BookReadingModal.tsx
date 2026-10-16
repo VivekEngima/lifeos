@@ -3,6 +3,12 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useLifeOS } from "@/context/LifeOSContext";
 import { ButtonSpinner } from "@/components/ButtonSpinner";
+import { formatDayFullWithOrdinal } from "@/lib/date-utils";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 
 export default function BookReadingModal() {
   const {
@@ -121,14 +127,18 @@ export default function BookReadingModal() {
   // Quick prep for logging session for a specific book
   const prepLogSessionForBook = (bookId: string) => {
     setSelectedBookId(bookId);
-    // Find the latest reading for this book across readingsToday or default
-    const latestForBook = readingsToday.find((r) => r.bookId === bookId);
+    const book = allBooks.find((b) => b.id === bookId);
+    // Find the latest reading for this book across readingsToday or from book's lastReadingSession
+    const latestForBook = readingsToday.find((r) => r.bookId === bookId) || book?.lastReadingSession;
     if (latestForBook) {
       setStartPage(String(latestForBook.endPage));
       setEndPage(String(latestForBook.endPage + 15));
+    } else if (book?.currentPage) {
+      setStartPage(String(book.currentPage));
+      setEndPage(String(book.currentPage + 15));
     } else {
-      setStartPage("");
-      setEndPage("");
+      setStartPage("1");
+      setEndPage("15");
     }
     setActiveTab("log_session");
   };
@@ -182,104 +192,74 @@ export default function BookReadingModal() {
   const pagesDelta = Math.max(0, (Number(endPage) || 0) - (Number(startPage) || 0));
 
   return (
-    <div
-      onClick={(e) => {
-        if (e.target === e.currentTarget) setBookModalOpen(false);
-      }}
-      className="fixed inset-0 z-50 bg-[#07080b]/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-5 overflow-y-auto"
-    >
-      <div
-        className="bg-[#0f1015] border border-cyan-500/30 rounded-2xl max-w-3xl w-full shadow-2xl relative my-auto overflow-hidden flex flex-col max-h-[92vh]"
-      >
+    <Dialog open={bookModalOpen} onOpenChange={setBookModalOpen}>
+      <DialogContent className="max-w-2xl bg-surface-container-low border border-cyan-500/30 rounded-2xl p-0 overflow-hidden flex flex-col max-h-[82vh] sm:max-h-[80vh]">
         {/* Glow Header Accent */}
-        <div className="h-1 w-full bg-gradient-to-r from-cyan-500 via-teal-400 to-amber-400" />
+        <div className="h-1 w-full bg-gradient-to-r from-cyan-500 via-teal-400 to-amber-400 shrink-0" />
 
         {/* Modal Header */}
-        <div className="p-5 pb-3 border-b border-white/10 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-cyan-500/15 border border-cyan-500/30 flex items-center justify-center text-cyan-400 shadow-inner shrink-0">
-              <span className="material-symbols-outlined text-[22px]">auto_stories</span>
+        <DialogHeader className="p-3.5 sm:p-4 pb-2.5 border-b border-outline-variant/30 flex flex-row items-center justify-between space-y-0 shrink-0">
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-xl bg-cyan-500/15 border border-cyan-500/30 flex items-center justify-center text-cyan-400 shadow-inner shrink-0">
+              <span className="material-symbols-outlined text-[20px]">auto_stories</span>
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="text-base font-bold text-white tracking-tight">Book Reading Vault</h2>
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-cyan-950/80 text-cyan-300 border border-cyan-500/40 uppercase">
+                <DialogTitle className="text-sm sm:text-base font-bold text-on-surface tracking-tight">Book Reading Vault</DialogTitle>
+                <Badge variant="default" className="text-[9px] uppercase">
                   Reading Protocol
-                </span>
+                </Badge>
               </div>
-              <p className="text-xs text-zinc-400 font-mono mt-0.5">
-                Session Date: <span className="text-cyan-300 font-semibold">{selectedDate}</span>
+              <DialogDescription className="text-[11px] text-on-surface-variant font-mono mt-0.5">
+                Session Date: <span className="text-cyan-300 font-semibold">{formatDayFullWithOrdinal(selectedDate)}</span>
                 {readingsToday.length > 0 && (
                   <span className="ml-2 text-emerald-400">
                     • {readingsToday.length} session{readingsToday.length > 1 ? "s" : ""} ({totalPagesToday}p today)
                   </span>
                 )}
-              </p>
+              </DialogDescription>
             </div>
           </div>
-
-          <button
-            onClick={() => setBookModalOpen(false)}
-            className="w-8 h-8 rounded-lg bg-white/5 hover:bg-white/10 text-zinc-400 hover:text-white flex items-center justify-center transition-colors"
-            title="Close modal"
-          >
-            <span className="material-symbols-outlined text-[18px]">close</span>
-          </button>
-        </div>
+        </DialogHeader>
 
         {/* Navigation Tabs */}
-        <div className="flex items-center gap-1 px-5 pt-3 border-b border-white/5 bg-[#0a0b0e] text-xs font-mono overflow-x-auto">
-          <button
-            onClick={() => setActiveTab("currently_reading")}
-            className={`px-3 py-2 border-b-2 font-medium transition-colors flex items-center gap-1.5 shrink-0 ${
-              activeTab === "currently_reading"
-                ? "border-cyan-400 text-cyan-400 bg-cyan-500/10"
-                : "border-transparent text-zinc-400 hover:text-zinc-200"
-            }`}
-          >
-            <span className="material-symbols-outlined text-[16px]">menu_book</span>
-            <span>Currently Reading ({currentlyReadingBooks.length})</span>
-          </button>
+        <Tabs value={activeTab} onValueChange={(val) => setActiveTab(val as any)} className="w-full flex flex-col flex-1 min-h-0 overflow-hidden">
+          <TabsList className="bg-surface-container-lowest/80 border-b border-outline-variant/30 p-1 flex justify-start rounded-none h-auto gap-1 text-xs font-mono shrink-0">
+            <TabsTrigger
+              value="currently_reading"
+              className="px-2.5 py-1.5 text-xs font-mono gap-1.5 data-[state=active]:bg-cyan-500/15 data-[state=active]:text-cyan-300"
+            >
+              <span className="material-symbols-outlined text-[16px]">menu_book</span>
+              <span>Currently Reading ({currentlyReadingBooks.length})</span>
+            </TabsTrigger>
 
-          <button
-            onClick={() => setActiveTab("log_session")}
-            className={`px-3 py-2 border-b-2 font-medium transition-colors flex items-center gap-1.5 shrink-0 ${
-              activeTab === "log_session"
-                ? "border-cyan-400 text-cyan-400 bg-cyan-500/10"
-                : "border-transparent text-zinc-400 hover:text-zinc-200"
-            }`}
-          >
-            <span className="material-symbols-outlined text-[18px]">add_circle</span>
-            <span>Log Daily Pages</span>
-          </button>
+            <TabsTrigger
+              value="log_session"
+              className="px-2.5 py-1.5 text-xs font-mono gap-1.5 data-[state=active]:bg-cyan-500/15 data-[state=active]:text-cyan-300"
+            >
+              <span className="material-symbols-outlined text-[16px]">add_circle</span>
+              <span>Log Daily Pages</span>
+            </TabsTrigger>
 
-          <button
-            onClick={() => setActiveTab("add_book")}
-            className={`px-3 py-2 border-b-2 font-medium transition-colors flex items-center gap-1.5 shrink-0 ${
-              activeTab === "add_book"
-                ? "border-cyan-400 text-cyan-400 bg-cyan-500/10"
-                : "border-transparent text-zinc-400 hover:text-zinc-200"
-            }`}
-          >
-            <span className="material-symbols-outlined text-[18px]">library_add</span>
-            <span>Add New Book</span>
-          </button>
+            <TabsTrigger
+              value="add_book"
+              className="px-2.5 py-1.5 text-xs font-mono gap-1.5 data-[state=active]:bg-cyan-500/15 data-[state=active]:text-cyan-300"
+            >
+              <span className="material-symbols-outlined text-[16px]">library_add</span>
+              <span>Add New Book</span>
+            </TabsTrigger>
 
-          <button
-            onClick={() => setActiveTab("all_books")}
-            className={`px-3 py-2 border-b-2 font-medium transition-colors flex items-center gap-1.5 shrink-0 ${
-              activeTab === "all_books"
-                ? "border-cyan-400 text-cyan-400 bg-cyan-500/10"
-                : "border-transparent text-zinc-400 hover:text-zinc-200"
-            }`}
-          >
-            <span className="material-symbols-outlined text-[16px]">shelves</span>
-            <span>All Books ({allBooks.length})</span>
-          </button>
-        </div>
+            <TabsTrigger
+              value="all_books"
+              className="px-2.5 py-1.5 text-xs font-mono gap-1.5 data-[state=active]:bg-cyan-500/15 data-[state=active]:text-cyan-300"
+            >
+              <span className="material-symbols-outlined text-[16px]">shelves</span>
+              <span>All Books ({allBooks.length})</span>
+            </TabsTrigger>
+          </TabsList>
 
-        {/* Tab Content Body */}
-        <div className="p-5 overflow-y-auto flex-1 space-y-5">
+          {/* Tab Content Body */}
+          <div className="p-3.5 sm:p-4 overflow-y-auto flex-1 min-h-0 space-y-4">
           {/* TAB 1: CURRENTLY READING */}
           {activeTab === "currently_reading" && (
             <div className="space-y-6">
@@ -292,7 +272,7 @@ export default function BookReadingModal() {
                   <div>
                     <div className="text-xs font-semibold text-white">Daily Reading Volume</div>
                     <div className="text-[11px] text-zinc-400 font-mono">
-                      {readingsToday.length} entry{readingsToday.length === 1 ? "" : "s"} logged on {selectedDate}
+                      {readingsToday.length} entry{readingsToday.length === 1 ? "" : "s"} logged on {formatDayFullWithOrdinal(selectedDate)}
                     </div>
                   </div>
                 </div>
@@ -417,7 +397,7 @@ export default function BookReadingModal() {
               )}
 
               {/* Today's Reading Sessions Logged */}
-              {readingsToday.length > 0 && (
+              {readingsToday.length > 0 ? (
                 <div className="mt-6 pt-5 border-t border-white/10">
                   <div className="flex items-center justify-between mb-3">
                     <h3 className="text-xs font-mono uppercase tracking-wider text-zinc-300 flex items-center gap-1.5">
@@ -430,10 +410,14 @@ export default function BookReadingModal() {
                   </div>
 
                   <div className="space-y-2">
-                    {readingsToday.map((r) => (
+                    {readingsToday.map((r, idx) => (
                       <div
                         key={r.id}
-                        className="bg-black/40 border border-white/5 hover:border-white/15 p-3 rounded-lg flex items-center justify-between gap-3 text-xs font-mono"
+                        className={`border p-3 rounded-lg flex items-center justify-between gap-3 text-xs font-mono transition-all ${
+                          idx === 0
+                            ? "bg-cyan-950/30 border-cyan-500/50 shadow-[0_0_12px_rgba(6,182,212,0.1)]"
+                            : "bg-black/40 border-white/5 hover:border-white/15"
+                        }`}
                       >
                         <div className="flex items-center gap-3 min-w-0">
                           {r.imageUrl ? (
@@ -449,7 +433,14 @@ export default function BookReadingModal() {
                           )}
 
                           <div className="min-w-0">
-                            <div className="font-semibold text-white truncate">{r.bookTitle}</div>
+                            <div className="flex items-center gap-2">
+                              <div className="font-semibold text-white truncate">{r.bookTitle}</div>
+                              {idx === 0 && (
+                                <span className="px-1.5 py-0.2 rounded text-[9px] font-mono bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 uppercase">
+                                  Latest Entry
+                                </span>
+                              )}
+                            </div>
                             <div className="text-zinc-400 text-xs">
                               Pages {r.startPage} → {r.endPage}
                               <span className="text-emerald-400 font-semibold ml-2">+{r.pagesRead} pages</span>
@@ -475,7 +466,65 @@ export default function BookReadingModal() {
                     ))}
                   </div>
                 </div>
-              )}
+              ) : state?.lastReadingLog ? (
+                <div className="mt-6 pt-5 border-t border-white/10">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="text-xs font-mono uppercase tracking-wider text-zinc-300 flex items-center gap-1.5">
+                      <span className="material-symbols-outlined text-[15px] text-cyan-400">history</span>
+                      Last Book Page Log Entry
+                    </h3>
+                    {state.lastReadingLog.sessionDate && (
+                      <span className="text-[11px] font-mono text-zinc-400">
+                        {state.lastReadingLog.sessionDate}
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="bg-surface-container-high/40 border border-cyan-500/30 p-3 rounded-xl flex items-center justify-between gap-3 text-xs font-mono">
+                    <div className="flex items-center gap-3 min-w-0">
+                      {state.lastReadingLog.imageUrl ? (
+                        <img
+                          src={state.lastReadingLog.imageUrl}
+                          alt=""
+                          className="w-8 h-11 object-cover rounded border border-white/10 shrink-0"
+                        />
+                      ) : (
+                        <div className="w-8 h-11 rounded bg-zinc-800 border border-white/10 flex items-center justify-center shrink-0 text-zinc-400">
+                          <span className="material-symbols-outlined text-[16px]">book</span>
+                        </div>
+                      )}
+
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="font-semibold text-white truncate">{state.lastReadingLog.bookTitle}</span>
+                          <span className="px-1.5 py-0.2 rounded text-[9px] font-mono bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 uppercase">
+                            Latest
+                          </span>
+                        </div>
+                        <div className="text-zinc-400 text-xs">
+                          Pages {state.lastReadingLog.startPage} → {state.lastReadingLog.endPage}
+                          <span className="text-emerald-400 font-semibold ml-2">+{state.lastReadingLog.pagesRead} pages</span>
+                        </div>
+                        {state.lastReadingLog.insightQuote && (
+                          <div className="text-[11px] text-amber-300/80 italic truncate max-w-md mt-0.5">
+                            &ldquo;{state.lastReadingLog.insightQuote}&rdquo;
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-1 shrink-0">
+                      <button
+                        onClick={() => openEditModal("reading", state.lastReadingLog!.id, state.lastReadingLog)}
+                        className="p-1 text-zinc-400 hover:text-cyan-400 transition-colors"
+                        title="Edit session"
+                      >
+                        <span className="material-symbols-outlined text-[15px]">edit</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ) : null}
             </div>
           )}
 
@@ -487,12 +536,33 @@ export default function BookReadingModal() {
                 <div className="lg:col-span-7 space-y-4">
                   <div className="bg-cyan-950/20 border border-cyan-500/20 p-3 rounded-xl flex items-center justify-between text-xs font-mono">
                     <span className="text-zinc-300">
-                      Date: <span className="text-cyan-300 font-bold">{selectedDate}</span>
+                      Date: <span className="text-cyan-300 font-bold">{formatDayFullWithOrdinal(selectedDate)}</span>
                     </span>
                     <span className="text-zinc-400 text-[11px]">
                       Multiple entries allowed per day
                     </span>
                   </div>
+
+                  {/* Last Added/Updated Page Log for Active Book */}
+                  {activeSessionBook?.lastReadingSession && (
+                    <div className="p-3 rounded-xl bg-surface-container-high/60 border border-cyan-500/30 flex items-center justify-between text-xs font-mono">
+                      <div className="flex items-center gap-2">
+                        <span className="material-symbols-outlined text-[16px] text-cyan-400">history</span>
+                        <div>
+                          <div className="text-[10px] text-zinc-400 uppercase tracking-wider">Last Added/Updated Log Entry:</div>
+                          <div className="text-white font-semibold">
+                            pp. {activeSessionBook.lastReadingSession.startPage} → {activeSessionBook.lastReadingSession.endPage}
+                            <span className="text-emerald-400 ml-1.5 font-bold">+{activeSessionBook.lastReadingSession.pagesRead}p</span>
+                          </div>
+                        </div>
+                      </div>
+                      {activeSessionBook.lastReadingSession.sessionDate && (
+                        <span className="text-[11px] text-zinc-400">
+                          {activeSessionBook.lastReadingSession.sessionDate}
+                        </span>
+                      )}
+                    </div>
+                  )}
 
                   {/* Book Selection */}
                   <div>
@@ -526,10 +596,16 @@ export default function BookReadingModal() {
                           const bId = e.target.value;
                           setSelectedBookId(bId);
                           const book = allBooks.find((b) => b.id === bId);
-                          if (book) {
-                            const cPage = book.currentPage || 1;
-                            setStartPage(String(cPage));
-                            setEndPage(String(cPage + 15));
+                          const latest = readingsToday.find((r) => r.bookId === bId) || book?.lastReadingSession;
+                          if (latest) {
+                            setStartPage(String(latest.endPage));
+                            setEndPage(String(latest.endPage + 15));
+                          } else if (book?.currentPage) {
+                            setStartPage(String(book.currentPage));
+                            setEndPage(String(book.currentPage + 15));
+                          } else {
+                            setStartPage("1");
+                            setEndPage("15");
                           }
                         }}
                         className="w-full bg-[#0a0b0e] border border-white/15 focus:border-cyan-400 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none font-mono cursor-pointer"
@@ -947,8 +1023,9 @@ export default function BookReadingModal() {
               )}
             </div>
           )}
-        </div>
-      </div>
-    </div>
+          </div>
+        </Tabs>
+      </DialogContent>
+    </Dialog>
   );
 }

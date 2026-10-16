@@ -16,8 +16,8 @@ export interface DailyTimeBlock {
   leverageScore?: number; // 1-10
 }
 
-export interface YogasanasChallengeDay {
-  dayNumber: number; // 1 to 8
+export interface SuryaKriyaChallengeDay {
+  dayNumber: number; // 1 to 48
   dateStr: string;
   dayLabel: string;
   formattedDate: string; // e.g. "Monday 1st March 2026"
@@ -26,20 +26,29 @@ export interface YogasanasChallengeDay {
   isCompleted: boolean;
   isPast: boolean;
   isFuture: boolean;
+  cycles?: number;
 }
 
-export interface YogasanasChallengeState {
+export interface SuryaKriyaChallengeState {
   targetDays: number;
   completedDays: number;
   pctCompleted: number;
   isCompletedToday: boolean;
   currentDayNumber: number;
-  days: YogasanasChallengeDay[];
+  days: SuryaKriyaChallengeDay[];
   todayDateStr: string;
   startDateStr: string;
   endDateStr: string;
   daysRemainingInProtocol: number;
+  startsTomorrow?: boolean;
+  isBeforeStart?: boolean;
+  isRestarted?: boolean;
+  statusLabel?: string;
+  todayCycles?: number;
 }
+
+export type YogasanasChallengeDay = SuryaKriyaChallengeDay;
+export type YogasanasChallengeState = SuryaKriyaChallengeState;
 
 export interface DashboardState {
   date: string;
@@ -105,7 +114,18 @@ export interface DashboardState {
     totalPagesRead?: number;
     totalSessions?: number;
     lastReadDate?: string | null;
+    lastReadingSession?: {
+      id: string;
+      startPage: number;
+      endPage: number;
+      pagesRead: number;
+      sessionDate: string;
+      insightQuote?: string;
+      createdAt?: string | null;
+      updatedAt?: string | null;
+    } | null;
     createdAt?: string;
+    updatedAt?: string | null;
   }>;
   currentBook?: {
     id: string;
@@ -121,7 +141,18 @@ export interface DashboardState {
     totalPagesRead?: number;
     totalSessions?: number;
     lastReadDate?: string | null;
+    lastReadingSession?: {
+      id: string;
+      startPage: number;
+      endPage: number;
+      pagesRead: number;
+      sessionDate: string;
+      insightQuote?: string;
+      createdAt?: string | null;
+      updatedAt?: string | null;
+    } | null;
     createdAt?: string;
+    updatedAt?: string | null;
   } | null;
   workoutToday: {
     id?: string;
@@ -175,6 +206,12 @@ export interface DashboardState {
     referenceLink?: string | null;
     sessionsCount?: number;
   } | null;
+  deepWorkWeeklyCadence?: Array<{
+    day: string;
+    date: string;
+    hours: number;
+    sessionsCount: number;
+  }>;
   readingToday: {
     id?: string;
     bookId?: string;
@@ -190,6 +227,20 @@ export interface DashboardState {
     insightQuote: string;
     vaultPath: string;
     sessionsCount?: number;
+    createdAt?: string | null;
+    updatedAt?: string | null;
+    lastSession?: {
+      id: string;
+      bookId: string;
+      sessionDate?: string;
+      startPage: number;
+      endPage: number;
+      pagesRead: number;
+      durationMinutes?: number;
+      insightQuote?: string;
+      createdAt?: string | null;
+      updatedAt?: string | null;
+    } | null;
   } | null;
   readingsToday: Array<{
     id: string;
@@ -197,6 +248,7 @@ export interface DashboardState {
     bookTitle: string;
     author: string;
     imageUrl?: string | null;
+    sessionDate?: string;
     startPage: number;
     endPage: number;
     pagesRead: number;
@@ -205,7 +257,25 @@ export interface DashboardState {
     insightQuote: string;
     vaultPath: string;
     createdAt?: string | null;
+    updatedAt?: string | null;
   }>;
+  lastReadingLog?: {
+    id: string;
+    bookId: string;
+    bookTitle: string;
+    author: string;
+    imageUrl?: string | null;
+    sessionDate: string;
+    startPage: number;
+    endPage: number;
+    pagesRead: number;
+    totalPages?: number | null;
+    durationMinutes: number;
+    insightQuote: string;
+    vaultPath: string;
+    createdAt?: string | null;
+    updatedAt?: string | null;
+  } | null;
   finance: {
     monthlyBudgetInr: number;
     monthlySpentInr: number;
@@ -296,6 +366,7 @@ export interface DashboardState {
     status: string;
     sortOrder: number;
   }>;
+  suryaKriyaChallenge?: SuryaKriyaChallengeState;
   yogasanasChallenge?: YogasanasChallengeState;
 }
 
@@ -369,6 +440,7 @@ export async function getDashboardState(dateStr: string): Promise<DashboardState
     dbPlannerTasks,
     allDbWorkouts,
     allDbPlannerTasks,
+    allDbDeepWork,
   ] = await Promise.all([
     drizzleDb.select().from(schema.financialGoals),
     drizzleDb.select().from(schema.customGoals),
@@ -377,9 +449,9 @@ export async function getDashboardState(dateStr: string): Promise<DashboardState
     drizzleDb.select().from(schema.workouts).where(eq(schema.workouts.sessionDate, dateStr)).orderBy(desc(schema.workouts.createdAt)).limit(1),
     drizzleDb.select().from(schema.sleepLogs).where(eq(schema.sleepLogs.sleepDate, dateStr)).orderBy(desc(schema.sleepLogs.createdAt)),
     drizzleDb.select().from(schema.deepWorkSessions).where(eq(schema.deepWorkSessions.sessionDate, dateStr)).orderBy(desc(schema.deepWorkSessions.createdAt)),
-    drizzleDb.select().from(schema.readings).where(eq(schema.readings.sessionDate, dateStr)).orderBy(desc(schema.readings.createdAt)),
-    drizzleDb.select().from(schema.books),
-    drizzleDb.select().from(schema.readings).orderBy(desc(schema.readings.sessionDate), desc(schema.readings.createdAt)),
+    drizzleDb.select().from(schema.readings).where(eq(schema.readings.sessionDate, dateStr)).orderBy(desc(schema.readings.updatedAt), desc(schema.readings.createdAt)),
+    drizzleDb.select().from(schema.books).orderBy(desc(schema.books.updatedAt), desc(schema.books.createdAt)),
+    drizzleDb.select().from(schema.readings).orderBy(desc(schema.readings.updatedAt), desc(schema.readings.sessionDate), desc(schema.readings.createdAt)),
     drizzleDb.select().from(schema.financeTransactions).where(eq(schema.financeTransactions.transactionDate, dateStr)),
     drizzleDb.select().from(schema.financeTransactions).orderBy(desc(schema.financeTransactions.transactionDate), desc(schema.financeTransactions.createdAt)),
     drizzleDb.select().from(schema.brahmacharyaLogs).where(eq(schema.brahmacharyaLogs.logDate, dateStr)).limit(1),
@@ -390,6 +462,7 @@ export async function getDashboardState(dateStr: string): Promise<DashboardState
     drizzleDb.select().from(schema.plannerTasks).where(eq(schema.plannerTasks.taskDate, dateStr)).orderBy(asc(schema.plannerTasks.sortOrder), asc(schema.plannerTasks.timeSlot)),
     drizzleDb.select().from(schema.workouts).orderBy(desc(schema.workouts.sessionDate)),
     drizzleDb.select().from(schema.plannerTasks).orderBy(desc(schema.plannerTasks.taskDate)),
+    drizzleDb.select().from(schema.deepWorkSessions).orderBy(desc(schema.deepWorkSessions.sessionDate), desc(schema.deepWorkSessions.createdAt)),
   ]);
 
   // 1. Primary Horizon (Pune Fund)
@@ -547,6 +620,30 @@ export async function getDashboardState(dateStr: string): Promise<DashboardState
       }
     : null;
 
+  // 7b. Weekly Focus Cadence (Mon-Sun for the week of dateStr)
+  const [curY, curM, curD] = dateStr.split("-").map(Number);
+  const targetDateUtc = new Date(Date.UTC(curY, curM - 1, curD));
+  const dayOfWeek = targetDateUtc.getUTCDay(); // 0 is Sun, 1 is Mon, ..., 6 is Sat
+  const diffToMon = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+  const mondayUtcMs = targetDateUtc.getTime() + diffToMon * 24 * 60 * 60 * 1000;
+
+  const weekDayNames = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+  const deepWorkWeeklyCadence = weekDayNames.map((dayName, idx) => {
+    const dayDate = new Date(mondayUtcMs + idx * 24 * 60 * 60 * 1000);
+    const dayDateStr = dayDate.toISOString().split("T")[0];
+    const daySessions = allDbDeepWork.filter(
+      (s) => String(s.sessionDate).split("T")[0] === dayDateStr
+    );
+    const dayTotalMinutes = daySessions.reduce((sum, s) => sum + (s.durationMinutes || 0), 0);
+    const hours = Number((dayTotalMinutes / 60).toFixed(1));
+    return {
+      day: dayName,
+      date: dayDateStr,
+      hours,
+      sessionsCount: daySessions.length,
+    };
+  });
+
   // 8. Reading Today (Supports multiple entries per day)
   const readingsToday = dbReadings.map((r) => {
     const b = dbBooks.find((book) => book.id === r.bookId);
@@ -554,6 +651,7 @@ export async function getDashboardState(dateStr: string): Promise<DashboardState
     return {
       id: r.id,
       bookId: r.bookId,
+      sessionDate: String(r.sessionDate),
       bookTitle: b?.title || "Book Session",
       author: b?.author || "",
       imageUrl: b?.imageUrl || null,
@@ -565,6 +663,7 @@ export async function getDashboardState(dateStr: string): Promise<DashboardState
       insightQuote: r.insightQuote || "",
       vaultPath: r.vaultPath || "/LifeOS/Readings",
       createdAt: r.createdAt ? r.createdAt.toISOString() : null,
+      updatedAt: (r as any).updatedAt ? (r as any).updatedAt.toISOString() : null,
     };
   });
 
@@ -581,6 +680,18 @@ export async function getDashboardState(dateStr: string): Promise<DashboardState
     const pctCompleted = totalPages > 0 ? Math.min(100, Math.round((highestPage / totalPages) * 100)) : 0;
     const pagesRemaining = totalPages > 0 ? Math.max(0, totalPages - highestPage) : 0;
     const lastSession = bookReadings[0];
+    const lastReadingSession = lastSession
+      ? {
+          id: lastSession.id,
+          startPage: lastSession.startPage,
+          endPage: lastSession.endPage,
+          pagesRead: lastSession.endPage === lastSession.startPage && lastSession.endPage > 0 ? 1 : Math.max(0, lastSession.endPage - lastSession.startPage),
+          sessionDate: String(lastSession.sessionDate),
+          insightQuote: lastSession.insightQuote || "",
+          createdAt: lastSession.createdAt ? lastSession.createdAt.toISOString() : null,
+          updatedAt: (lastSession as any).updatedAt ? (lastSession as any).updatedAt.toISOString() : null,
+        }
+      : null;
 
     return {
       id: b.id,
@@ -596,22 +707,29 @@ export async function getDashboardState(dateStr: string): Promise<DashboardState
       totalPagesRead,
       totalSessions,
       lastReadDate: lastSession ? String(lastSession.sessionDate) : null,
+      lastReadingSession,
       createdAt: b.createdAt.toISOString(),
+      updatedAt: (b as any).updatedAt ? (b as any).updatedAt.toISOString() : null,
     };
   });
 
   // Active / current book selection logic:
-  // 1. If reading logged today, show that book
+  // 1. If reading logged today, show that book (first item in readingsToday has latest updated/added reading)
   let activeBook = readingsToday.length > 0
     ? mappedBooks.find((b) => b.id === readingsToday[0].bookId)
     : null;
 
-  // 2. If no reading today, find an active book that is currently being read (status === "reading" and !isCompleted)
+  // 2. If no reading today, show the book that has the latest reading session added or updated across all reading logs!
+  if (!activeBook && allDbReadings.length > 0) {
+    activeBook = mappedBooks.find((b) => b.id === allDbReadings[0].bookId && b.status === "reading" && !b.isCompleted) || null;
+  }
+
+  // 3. If still no active reading book, find any active book that is currently being read (status === "reading" and !isCompleted)
   if (!activeBook) {
     activeBook = mappedBooks.find((b) => b.status === "reading" && !b.isCompleted) || null;
   }
 
-  // 3. If no active reading book exists (all books are completed or no active book), show the latest completed book
+  // 4. If no active reading book exists (all books are completed or no active book), show the latest completed book
   if (!activeBook && mappedBooks.length > 0) {
     activeBook = mappedBooks.find((b) => b.isCompleted) || mappedBooks[0];
   }
@@ -629,16 +747,60 @@ export async function getDashboardState(dateStr: string): Promise<DashboardState
     ? Math.max(...activeBookReadingsToday.map((r) => r.endPage))
     : (readingsToday.length > 0 ? readingsToday[0].endPage : 0);
 
+  const latestEntryToday = activeBookReadingsToday.length > 0
+    ? activeBookReadingsToday[0]
+    : (readingsToday.length > 0 ? readingsToday[0] : null);
+
   const reading = readingsToday.length > 0
     ? {
-        ...(activeBookReadingsToday.length > 0 ? activeBookReadingsToday[0] : readingsToday[0]),
+        ...(latestEntryToday || readingsToday[0]),
         startPage: dayStartPage,
         endPage: dayEndPage,
         pagesRead: activeBookReadingsToday.length > 0 ? activeBookPagesReadToday : readingsToday[0].pagesRead,
-        imageUrl: (activeBookReadingsToday.length > 0 ? activeBookReadingsToday[0].imageUrl : readingsToday[0].imageUrl) || currentBook?.imageUrl || null,
+        imageUrl: (latestEntryToday?.imageUrl) || currentBook?.imageUrl || null,
         totalDayPages: totalPagesReadToday,
         sessionsCount: activeBookReadingsToday.length,
         totalDaySessions: readingsToday.length,
+        lastSession: latestEntryToday
+          ? {
+              id: latestEntryToday.id,
+              bookId: latestEntryToday.bookId,
+              sessionDate: latestEntryToday.sessionDate,
+              startPage: latestEntryToday.startPage,
+              endPage: latestEntryToday.endPage,
+              pagesRead: latestEntryToday.pagesRead,
+              durationMinutes: latestEntryToday.durationMinutes,
+              insightQuote: latestEntryToday.insightQuote,
+              createdAt: latestEntryToday.createdAt,
+              updatedAt: (latestEntryToday as any).updatedAt,
+            }
+          : null,
+      }
+    : null;
+
+  // Global last reading log entry across the entire database (most recently added/updated)
+  const latestDbReading = allDbReadings.length > 0 ? allDbReadings[0] : null;
+  const latestDbBook = latestDbReading ? dbBooks.find((b) => b.id === latestDbReading.bookId) : null;
+  const lastReadingLog = latestDbReading
+    ? {
+        id: latestDbReading.id,
+        bookId: latestDbReading.bookId,
+        bookTitle: latestDbBook?.title || "Book Session",
+        author: latestDbBook?.author || "",
+        imageUrl: latestDbBook?.imageUrl || null,
+        sessionDate: String(latestDbReading.sessionDate),
+        startPage: latestDbReading.startPage,
+        endPage: latestDbReading.endPage,
+        pagesRead:
+          latestDbReading.endPage === latestDbReading.startPage && latestDbReading.endPage > 0
+            ? 1
+            : Math.max(0, latestDbReading.endPage - latestDbReading.startPage),
+        totalPages: latestDbBook?.totalPages || null,
+        durationMinutes: latestDbReading.durationMinutes || 0,
+        insightQuote: latestDbReading.insightQuote || "",
+        vaultPath: latestDbReading.vaultPath || "/LifeOS/Readings",
+        createdAt: latestDbReading.createdAt ? latestDbReading.createdAt.toISOString() : null,
+        updatedAt: (latestDbReading as any).updatedAt ? (latestDbReading as any).updatedAt.toISOString() : null,
       }
     : null;
 
@@ -786,57 +948,117 @@ export async function getDashboardState(dateStr: string): Promise<DashboardState
   const disciplineRating = summary?.disciplineRating ?? 0;
   const dayIntegrityScore = summary ? Number(summary.dayIntegrityScore) : Number(((pillarsMet / 6) * 10).toFixed(1));
 
-  // 12. 8-Day Yogasanas Cadence Protocol
-  const isYogasanaWorkout = (w: (typeof schema.workouts)["$inferSelect"]) => {
+  // 12. 8-Day Surya Kriya Cadence Protocol
+  const isSuryaKriyaWorkout = (w: (typeof schema.workouts)["$inferSelect"]) => {
     const type = (w.type || "").toLowerCase();
     const desc = (w.description || "").toLowerCase();
     const prac = (w.practices || "").toLowerCase();
-    return type.includes("yogasana") || desc.includes("yogasana") || prac.includes("yogasana");
+    return (
+      type.includes("surya_kriya") ||
+      type.includes("surya kriya") ||
+      desc.includes("surya kriya") ||
+      desc.includes("surya_kriya") ||
+      prac.includes("surya_kriya") ||
+      prac.includes("surya kriya")
+    );
   };
 
-  const isYogasanaTask = (t: (typeof schema.plannerTasks)["$inferSelect"]) => {
+  const isSuryaKriyaTask = (t: (typeof schema.plannerTasks)["$inferSelect"]) => {
     const title = (t.title || "").toLowerCase();
-    return title.includes("yogasana");
+    return title.includes("surya kriya") || title.includes("surya_kriya");
   };
 
-  const yogasanaWorkouts = allDbWorkouts.filter(isYogasanaWorkout);
-  const yogasanaTasks = allDbPlannerTasks.filter(isYogasanaTask);
+  const suryaKriyaWorkouts = allDbWorkouts.filter(isSuryaKriyaWorkout);
+  const suryaKriyaTasks = allDbPlannerTasks.filter(isSuryaKriyaTask);
 
-  const yogasanaDates = Array.from(
+  const suryaKriyaDates = Array.from(
     new Set([
-      ...yogasanaWorkouts.map((w) => String(w.sessionDate).split("T")[0]),
-      ...yogasanaTasks.map((t) => String(t.taskDate).split("T")[0]),
+      ...suryaKriyaWorkouts.map((w) => String(w.sessionDate).split("T")[0]),
+      ...suryaKriyaTasks.map((t) => String(t.taskDate).split("T")[0]),
     ])
   )
     .filter(Boolean)
     .sort();
 
-  // 8-Day Protocol starts from today (Day 1 of 8)
-  const startChallengeDate = dateStr;
-  const startDateObj = new Date(startChallengeDate + "T00:00:00Z");
-  const challengeDays: YogasanasChallengeDay[] = [];
-  let challengeCompletedCount = 0;
+  // 12. 48-Day Surya Kriya Cadence Protocol (Mandala)
+  // If a day is missed, count restarts from count 1 for a 48-day protocol!
+  const isDateCompleted = (dStr: string) => {
+    const workout = suryaKriyaWorkouts.find(
+      (w) => String(w.sessionDate).split("T")[0] === dStr
+    );
+    const task = suryaKriyaTasks.find(
+      (t) => String(t.taskDate).split("T")[0] === dStr
+    );
+    return Boolean(workout || (task && task.status === "completed"));
+  };
 
+  const addDaysToDateStr = (dStr: string, daysToAdd: number): string => {
+    const d = new Date(dStr + "T00:00:00Z");
+    return new Date(d.getTime() + daysToAdd * 86400000).toISOString().split("T")[0];
+  };
+
+  const initialAnchorDate = "2026-10-10";
+  const isBeforeStart = dateStr < initialAnchorDate;
+  const startsTomorrow = isBeforeStart && dateStr === "2026-10-09";
+
+  // Check if current viewed date is completed
+  const isCompletedToday = isDateCompleted(dateStr);
+
+  // Calculate unbroken consecutive completed days ending yesterday
+  let pastStreak = 0;
+  let checkBackDate = addDaysToDateStr(dateStr, -1);
+  while (checkBackDate >= initialAnchorDate && isDateCompleted(checkBackDate)) {
+    pastStreak++;
+    checkBackDate = addDaysToDateStr(checkBackDate, -1);
+  }
+
+  // Determine challenge start date and whether a restart occurred
+  // If yesterday was completed, the cycle started `pastStreak` days before today.
+  // If yesterday was NOT completed (missed), the streak broke, so the 48-day protocol restarts from count 1 today!
+  let challengeStartDate: string;
+  let currentDayNumber: number;
+  let challengeCompletedCount: number;
+  let isRestarted = false;
+
+  const hadAnyPriorCompletions = suryaKriyaDates.some((d) => d < dateStr);
+
+  if (isBeforeStart) {
+    challengeStartDate = initialAnchorDate;
+    currentDayNumber = 1;
+    challengeCompletedCount = 0;
+  } else if (pastStreak > 0) {
+    // Unbroken run leading into today
+    challengeStartDate = addDaysToDateStr(dateStr, -pastStreak);
+    currentDayNumber = Math.min(48, pastStreak + 1);
+    challengeCompletedCount = Math.min(48, isCompletedToday ? pastStreak + 1 : pastStreak);
+  } else {
+    // pastStreak === 0: yesterday was missed! Protocol restarts from count 1 on dateStr (today)
+    challengeStartDate = dateStr;
+    currentDayNumber = 1;
+    challengeCompletedCount = isCompletedToday ? 1 : 0;
+    if (hadAnyPriorCompletions) {
+      isRestarted = true;
+    }
+  }
+
+  const challengeStartDateObj = new Date(challengeStartDate + "T00:00:00Z");
+  const challengeDays: SuryaKriyaChallengeDay[] = [];
   const challengeMonthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
   const challengeDayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
-  for (let i = 0; i < 8; i++) {
-    const dObj = new Date(startDateObj.getTime() + i * 24 * 60 * 60 * 1000);
+  for (let i = 0; i < 48; i++) {
+    const dObj = new Date(challengeStartDateObj.getTime() + i * 86400000);
     const curDateStr = dObj.toISOString().split("T")[0];
 
-    const workoutForDay = yogasanaWorkouts.find(
+    const workoutForDay = suryaKriyaWorkouts.find(
       (w) => String(w.sessionDate).split("T")[0] === curDateStr
     );
-    const taskForDay = yogasanaTasks.find(
+    const taskForDay = suryaKriyaTasks.find(
       (t) => String(t.taskDate).split("T")[0] === curDateStr
     );
     const isCompleted = Boolean(
       workoutForDay || (taskForDay && taskForDay.status === "completed")
     );
-
-    if (isCompleted) {
-      challengeCompletedCount++;
-    }
 
     const isToday = curDateStr === dateStr;
     const isPast = curDateStr < dateStr;
@@ -852,20 +1074,35 @@ export async function getDashboardState(dateStr: string): Promise<DashboardState
       isCompleted,
       isPast,
       isFuture,
+      cycles: workoutForDay ? (workoutForDay.suryaKriyaCycles ?? workoutForDay.cycles ?? undefined) : undefined,
     });
   }
 
-  const currentChallengeDay = challengeDays.find((d) => d.isToday);
-  const currentDayNumber = currentChallengeDay ? currentChallengeDay.dayNumber : 1;
-  const isCompletedToday = currentChallengeDay ? currentChallengeDay.isCompleted : false;
-  const startDateStr = challengeDays.length > 0 ? challengeDays[0].dateStr : dateStr;
-  const endDateStr = challengeDays.length > 0 ? challengeDays[challengeDays.length - 1].dateStr : dateStr;
-  const daysRemainingInProtocol = Math.max(0, 8 - challengeCompletedCount);
+  const isAfterEnd = dateStr > challengeDays[challengeDays.length - 1].dateStr;
+  const startDateStr = challengeDays[0].dateStr;
+  const endDateStr = challengeDays[challengeDays.length - 1].dateStr;
+  const daysRemainingInProtocol = Math.max(0, 48 - challengeCompletedCount);
 
-  const yogasanasChallenge: YogasanasChallengeState = {
-    targetDays: 8,
+  let statusLabel = `Day ${currentDayNumber} of 48`;
+  if (isBeforeStart) {
+    statusLabel = startsTomorrow ? "Starts Tomorrow (Day 1 of 48)" : `Starts on ${challengeDays[0]?.formattedDate}`;
+  } else if (isRestarted && !isCompletedToday) {
+    statusLabel = "Day 1 of 48 (Restarted from Count 1)";
+  } else if (challengeCompletedCount >= 48) {
+    statusLabel = "48 Days Completed (Protocol Accomplished)";
+  }
+
+  const todayWorkout = suryaKriyaWorkouts.find(
+    (w) => String(w.sessionDate).split("T")[0] === dateStr
+  );
+  const todayCycles = todayWorkout
+    ? (todayWorkout.suryaKriyaCycles ?? todayWorkout.cycles ?? 3)
+    : 3;
+
+  const suryaKriyaChallenge: SuryaKriyaChallengeState = {
+    targetDays: 48,
     completedDays: challengeCompletedCount,
-    pctCompleted: Math.min(100, Math.round((challengeCompletedCount / 8) * 100)),
+    pctCompleted: Math.min(100, Math.round((challengeCompletedCount / 48) * 100)),
     isCompletedToday,
     currentDayNumber,
     days: challengeDays,
@@ -873,7 +1110,13 @@ export async function getDashboardState(dateStr: string): Promise<DashboardState
     startDateStr,
     endDateStr,
     daysRemainingInProtocol,
+    startsTomorrow,
+    isBeforeStart,
+    isRestarted,
+    statusLabel,
+    todayCycles,
   };
+  const yogasanasChallenge = suryaKriyaChallenge;
 
   return {
     date: dateStr,
@@ -916,8 +1159,10 @@ export async function getDashboardState(dateStr: string): Promise<DashboardState
     sleepToday: sleep,
     sleepLogsToday,
     deepWorkToday: dw,
+    deepWorkWeeklyCadence,
     readingToday: reading,
     readingsToday,
+    lastReadingLog,
     finance: {
       monthlyBudgetInr,
       monthlySpentInr,
@@ -957,6 +1202,7 @@ export async function getDashboardState(dateStr: string): Promise<DashboardState
     pillarsTotal: 6,
     isLocked: summary?.isLocked ?? false,
     todayTasks: dbPlannerTasks || [],
+    suryaKriyaChallenge,
     yogasanasChallenge,
   };
 }
@@ -1184,12 +1430,13 @@ export async function logReading(data: {
     durationMinutes: Number(data.durationMinutes || 0),
     insightQuote: data.insightQuote || "",
     vaultPath: data.vaultPath || "/LifeOS/Readings",
+    updatedAt: new Date(),
   }).returning();
 
   // If this reading session reaches or exceeds totalPages, auto-mark completed
   const targetBook = await drizzleDb.select().from(schema.books).where(eq(schema.books.id, bookId)).limit(1);
   if (targetBook.length > 0 && targetBook[0].totalPages && Number(data.endPage) >= targetBook[0].totalPages) {
-    await drizzleDb.update(schema.books).set({ status: "completed" }).where(eq(schema.books.id, bookId));
+    await drizzleDb.update(schema.books).set({ status: "completed", updatedAt: new Date() }).where(eq(schema.books.id, bookId));
   }
 
   return { success: true, reading: inserted[0] };
@@ -1200,8 +1447,8 @@ export async function getAllBooks() {
   if (!drizzleDb) throw new Error("Database not connected");
 
   const [dbBooks, dbReadings] = await Promise.all([
-    drizzleDb.select().from(schema.books).orderBy(desc(schema.books.createdAt)),
-    drizzleDb.select().from(schema.readings).orderBy(desc(schema.readings.sessionDate), desc(schema.readings.createdAt)),
+    drizzleDb.select().from(schema.books).orderBy(desc(schema.books.updatedAt), desc(schema.books.createdAt)),
+    drizzleDb.select().from(schema.readings).orderBy(desc(schema.readings.updatedAt), desc(schema.readings.sessionDate), desc(schema.readings.createdAt)),
   ]);
 
   return dbBooks.map((b) => {
@@ -1214,6 +1461,18 @@ export async function getAllBooks() {
     const pctCompleted = totalPages > 0 ? Math.min(100, Math.round((highestPage / totalPages) * 100)) : 0;
     const pagesRemaining = totalPages > 0 ? Math.max(0, totalPages - highestPage) : 0;
     const lastSession = bookReadings[0];
+    const lastReadingSession = lastSession
+      ? {
+          id: lastSession.id,
+          startPage: lastSession.startPage,
+          endPage: lastSession.endPage,
+          pagesRead: lastSession.endPage === lastSession.startPage && lastSession.endPage > 0 ? 1 : Math.max(0, lastSession.endPage - lastSession.startPage),
+          sessionDate: String(lastSession.sessionDate),
+          insightQuote: lastSession.insightQuote || "",
+          createdAt: lastSession.createdAt ? lastSession.createdAt.toISOString() : null,
+          updatedAt: (lastSession as any).updatedAt ? (lastSession as any).updatedAt.toISOString() : null,
+        }
+      : null;
 
     return {
       id: b.id,
@@ -1229,7 +1488,9 @@ export async function getAllBooks() {
       totalSessions,
       totalPagesRead,
       lastReadDate: lastSession ? String(lastSession.sessionDate) : null,
+      lastReadingSession,
       createdAt: b.createdAt.toISOString(),
+      updatedAt: (b as any).updatedAt ? (b as any).updatedAt.toISOString() : null,
     };
   });
 }
@@ -1241,8 +1502,8 @@ export async function getAllReadings(bookId?: string) {
   const [dbBooks, dbReadings] = await Promise.all([
     drizzleDb.select().from(schema.books),
     bookId
-      ? drizzleDb.select().from(schema.readings).where(eq(schema.readings.bookId, bookId)).orderBy(desc(schema.readings.sessionDate), desc(schema.readings.createdAt))
-      : drizzleDb.select().from(schema.readings).orderBy(desc(schema.readings.sessionDate), desc(schema.readings.createdAt)),
+      ? drizzleDb.select().from(schema.readings).where(eq(schema.readings.bookId, bookId)).orderBy(desc(schema.readings.updatedAt), desc(schema.readings.sessionDate), desc(schema.readings.createdAt))
+      : drizzleDb.select().from(schema.readings).orderBy(desc(schema.readings.updatedAt), desc(schema.readings.sessionDate), desc(schema.readings.createdAt)),
   ]);
 
   const bookMap = new Map<string, typeof dbBooks[0]>();
@@ -1267,6 +1528,7 @@ export async function getAllReadings(bookId?: string) {
       insightQuote: r.insightQuote || "",
       vaultPath: r.vaultPath || "/LifeOS/Readings",
       createdAt: r.createdAt ? r.createdAt.toISOString() : null,
+      updatedAt: (r as any).updatedAt ? (r as any).updatedAt.toISOString() : null,
     };
   });
 }
@@ -1290,6 +1552,7 @@ export async function createBook(data: {
       imageUrl: data.imageUrl || null,
       totalPages: data.totalPages ? Number(data.totalPages) : null,
       status: data.status || "reading",
+      updatedAt: new Date(),
     })
     .returning();
 
@@ -1309,7 +1572,7 @@ export async function updateBook(
   const drizzleDb = getDb();
   if (!drizzleDb) throw new Error("Database not connected");
 
-  const updateData: Record<string, any> = {};
+  const updateData: Record<string, any> = { updatedAt: new Date() };
   if (data.title !== undefined) updateData.title = data.title.trim();
   if (data.author !== undefined) updateData.author = data.author.trim();
   if (data.imageUrl !== undefined) updateData.imageUrl = data.imageUrl;
@@ -1695,6 +1958,7 @@ export async function updateReading(id: string, data: any) {
     durationMinutes: data.durationMinutes ? Number(data.durationMinutes) : undefined,
     insightQuote: data.insightQuote,
     vaultPath: data.vaultPath,
+    updatedAt: new Date(),
   }).where(eq(schema.readings.id, id));
   return { success: true };
 }
@@ -2246,12 +2510,7 @@ export async function getStreaksAndConsistencyTelemetry() {
         : 0;
 
     const weekdayShort = tileDate.toLocaleDateString("en-US", { weekday: "short" });
-    const dateLabel = tileDate.toLocaleDateString("en-US", {
-      weekday: "short",
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    });
+    const dateLabel = formatDayFullWithOrdinal(tileDate);
 
     let hoverStatus = "";
     if (isPadding) {
@@ -2424,12 +2683,7 @@ export async function getStreaksAndConsistencyTelemetry() {
         const dStr = `2026-${String(m + 1).padStart(2, "0")}-${String(dayNum).padStart(2, "0")}`;
         const dayDate = new Date(2026, m, dayNum);
         const weekdayShort = dayDate.toLocaleDateString("en-US", { weekday: "short" });
-        const dateLabel = dayDate.toLocaleDateString("en-US", {
-          weekday: "short",
-          month: "short",
-          day: "numeric",
-          year: "numeric",
-        });
+        const dateLabel = formatDayFullWithOrdinal(dayDate);
         const isFuture = dStr > todayStr;
         const isToday = dStr === todayStr;
 

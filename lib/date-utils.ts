@@ -7,8 +7,14 @@ export function getLocalTodayStr(): string {
 }
 
 export function parseDateString(dateStr: string): Date {
-  const [y, m, d] = dateStr.split("-").map(Number);
-  return new Date(y, (m || 1) - 1, d || 1);
+  if (!dateStr) return new Date();
+  const cleanStr = dateStr.includes("T") ? dateStr.split("T")[0] : dateStr;
+  const parts = cleanStr.split("-").map(Number);
+  if (parts.length >= 3 && !isNaN(parts[0]) && !isNaN(parts[1]) && !isNaN(parts[2])) {
+    return new Date(parts[0], parts[1] - 1, parts[2]);
+  }
+  const fallback = new Date(dateStr);
+  return isNaN(fallback.getTime()) ? new Date() : fallback;
 }
 
 export function formatLocalDateString(
@@ -16,16 +22,11 @@ export function formatLocalDateString(
   options?: Intl.DateTimeFormatOptions
 ): string {
   try {
+    if (!options) {
+      return formatDayFullWithOrdinal(dateStr);
+    }
     const d = parseDateString(dateStr);
-    return d.toLocaleDateString(
-      "en-US",
-      options || {
-        weekday: "short",
-        day: "numeric",
-        month: "short",
-        year: "numeric",
-      }
-    );
+    return d.toLocaleDateString("en-US", options);
   } catch {
     return dateStr;
   }
@@ -56,7 +57,7 @@ export function getOrdinalSuffix(n: number): string {
 
 /**
  * Formats a date string (YYYY-MM-DD) or Date object into:
- * "Monday 1st March 2026" format with full weekday, day with ordinal suffix,
+ * "Monday, 1st October 2027" format with full weekday, comma, day with ordinal suffix,
  * full month name, and four-digit year.
  */
 export function formatDayFullWithOrdinal(dateInput: string | Date): string {
@@ -91,7 +92,7 @@ export function formatDayFullWithOrdinal(dateInput: string | Date): string {
     const month = monthNames[d.getMonth()];
     const year = d.getFullYear();
 
-    return `${dayOfWeek} ${dayNum}${suffix} ${month} ${year}`;
+    return `${dayOfWeek}, ${dayNum}${suffix} ${month} ${year}`;
   } catch {
     return String(dateInput);
   }

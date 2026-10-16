@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import { useLifeOS } from "@/context/LifeOSContext";
-import { getLocalTodayStr, addDaysToDateStr, formatLocalDateString } from "@/lib/date-utils";
+import { getLocalTodayStr, addDaysToDateStr, formatLocalDateString, formatDayFullWithOrdinal } from "@/lib/date-utils";
 import ButtonSpinner from "@/components/ButtonSpinner";
 
 // ─── Types ────────────────────────────────────────────────────────────
@@ -90,8 +90,7 @@ function getMonthRange(dateStr: string) {
 
 function formatShortDate(dateStr: string) {
   try {
-    const d = new Date(dateStr + "T00:00:00");
-    return d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
+    return formatDayFullWithOrdinal(dateStr);
   } catch {
     return dateStr;
   }

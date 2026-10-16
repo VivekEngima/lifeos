@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import Link from "next/link";
 import { useLifeOS } from "@/context/LifeOSContext";
+import { formatDayFullWithOrdinal } from "@/lib/date-utils";
 
 interface ReadingSession {
   id: string;
@@ -17,8 +18,9 @@ interface ReadingSession {
   pagesRead: number;
   durationMinutes: number;
   insightQuote: string;
-  vaultPath: string;
+  vaultPath?: string;
   createdAt: string | null;
+  updatedAt?: string | null;
 }
 
 export default function ReadingVaultPage() {
@@ -130,13 +132,7 @@ export default function ReadingVaultPage() {
 
   const formatDate = (dateStr: string) => {
     try {
-      const d = new Date(dateStr + "T00:00:00Z");
-      return d.toLocaleDateString("en-US", {
-        weekday: "short",
-        day: "numeric",
-        month: "short",
-        year: "numeric",
-      });
+      return formatDayFullWithOrdinal(dateStr);
     } catch {
       return dateStr;
     }
@@ -430,6 +426,25 @@ export default function ReadingVaultPage() {
                                 </div>
                               </div>
                             )}
+
+                            {/* Last Added/Updated Page Log for this book */}
+                            {book.lastReadingSession && (
+                              <div className="mt-3 p-2.5 rounded-lg bg-surface-container/60 border border-cyan-500/25 text-xs font-mono flex items-center justify-between">
+                                <div className="flex items-center gap-1.5 min-w-0">
+                                  <span className="material-symbols-outlined text-[14px] text-cyan-400 shrink-0">history_edu</span>
+                                  <div className="truncate">
+                                    <span className="text-zinc-400 text-[11px]">Last log: </span>
+                                    <span className="text-white font-medium">pp. {book.lastReadingSession.startPage} → {book.lastReadingSession.endPage}</span>
+                                    <span className="text-emerald-400 font-semibold ml-1">+{book.lastReadingSession.pagesRead}p</span>
+                                  </div>
+                                </div>
+                                {book.lastReadingSession.sessionDate && (
+                                  <span className="text-[10px] text-zinc-500 shrink-0 ml-2">
+                                    {book.lastReadingSession.sessionDate}
+                                  </span>
+                                )}
+                              </div>
+                            )}
                           </div>
 
                           {/* Quick Card Actions */}
@@ -596,10 +611,14 @@ export default function ReadingVaultPage() {
             </div>
           ) : (
             <div className="space-y-3">
-              {filteredReadings.map((session) => (
+              {filteredReadings.map((session, index) => (
                 <div
                   key={session.id}
-                  className="bg-surface-container-low border border-outline-variant/60 hover:border-cyan-500/40 p-4 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs font-mono transition-all group"
+                  className={`bg-surface-container-low border ${
+                    index === 0
+                      ? "border-cyan-500/50 shadow-[0_0_15px_rgba(6,182,212,0.1)]"
+                      : "border-outline-variant/60 hover:border-cyan-500/40"
+                  } p-4 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs font-mono transition-all group`}
                 >
                   <div className="flex items-center gap-3 min-w-0">
                     {/* Thumbnail */}
@@ -616,13 +635,19 @@ export default function ReadingVaultPage() {
                     )}
 
                     <div className="min-w-0 space-y-1">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <span className="font-bold text-sm text-on-surface truncate">
                           {session.bookTitle}
                         </span>
                         {session.author && (
                           <span className="text-zinc-400 text-xs truncate">
                             • {session.author}
+                          </span>
+                        )}
+                        {index === 0 && (
+                          <span className="px-1.5 py-0.5 rounded text-[9px] font-bold tracking-wider uppercase bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 flex items-center gap-1">
+                            <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
+                            {session.updatedAt && session.createdAt && session.updatedAt !== session.createdAt ? "Last Updated Log" : "Last Added Log"}
                           </span>
                         )}
                       </div>

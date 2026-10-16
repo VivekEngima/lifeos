@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { useLifeOS } from "@/context/LifeOSContext";
 import { ButtonSpinner } from "@/components/ButtonSpinner";
+import { formatDayFullWithOrdinal } from "@/lib/date-utils";
 
 export default function FinancePage() {
   const {
@@ -125,13 +126,7 @@ export default function FinancePage() {
 
   const formatDateLabel = (dStr: string) => {
     try {
-      const d = new Date(dStr + "T00:00:00Z");
-      return d.toLocaleDateString("en-US", {
-        weekday: "short",
-        day: "numeric",
-        month: "short",
-        year: "numeric",
-      });
+      return formatDayFullWithOrdinal(dStr);
     } catch {
       return dStr;
     }

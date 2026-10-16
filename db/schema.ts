@@ -46,6 +46,7 @@ export const books = pgTable("books", {
   totalPages: integer("total_pages"),
   status: text("status").default("reading"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
 export const readings = pgTable("readings", {
@@ -60,6 +61,7 @@ export const readings = pgTable("readings", {
   insightQuote: text("insight_quote"),
   vaultPath: text("vault_path"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
 // ---------------------------------------------------------------------

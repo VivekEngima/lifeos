@@ -223,12 +223,16 @@ interface LifeOSContextType {
   updateCustomGoal: (id: string, goal: any) => Promise<void>;
   deleteCustomGoal: (id: string) => Promise<void>;
   togglePlannerTask: (taskId: string, currentStatus: string) => Promise<void>;
-  toggleYogasanasDaily: (targetDate?: string) => Promise<void>;
+  toggleSuryaKriyaDaily: (targetDate?: string, cycles?: number) => Promise<void>;
+  updateSuryaKriyaDaily: (cycles: number, targetDate?: string) => Promise<void>;
+  toggleYogasanasDaily: (targetDate?: string, cycles?: number) => Promise<void>;
 }
 
 const LifeOSContext = createContext<LifeOSContextType | undefined>(undefined);
 
 import { getLocalTodayStr, addDaysToDateStr } from "@/lib/date-utils";
+import { toast } from "sonner";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 export function LifeOSProvider({ children }: { children: React.ReactNode }) {
   // Default to today's local date formatted as YYYY-MM-DD
@@ -236,9 +240,45 @@ export function LifeOSProvider({ children }: { children: React.ReactNode }) {
 
   const [selectedDate, setSelectedDate] = useState(getLocalTodayStr());
   const [state, setState] = useState<DashboardState | null>(null);
-  const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(0);
   const [error, setError] = useState<string | null>(null);
+
+  const queryClient = useQueryClient();
+
+  // TanStack Query for caching and background synchronization of dashboard state
+  const {
+    data: queryDashboardData,
+    isLoading: isQueryLoading,
+    error: queryError,
+    refetch: refetchQueryDashboard,
+  } = useQuery<DashboardState>({
+    queryKey: ["dashboard", selectedDate],
+    queryFn: async () => {
+      const res = await fetch(`/api/dashboard?date=${selectedDate}`);
+      if (!res.ok) {
+        const errJson = await res.json().catch(() => null);
+        throw new Error(errJson?.details || errJson?.error || "Failed to fetch state from Supabase");
+      }
+      return (await res.json()) as DashboardState;
+    },
+    staleTime: 1000 * 30, // 30s fresh
+  });
+
+  // Keep state in sync with queryDashboardData
+  useEffect(() => {
+    if (queryDashboardData) {
+      setState(queryDashboardData);
+      setError(null);
+    }
+  }, [queryDashboardData]);
+
+  useEffect(() => {
+    if (queryError) {
+      setError((queryError as Error).message || "Failed to load");
+    }
+  }, [queryError]);
+
+  const loading = (isQueryLoading && !state) || actionLoading > 0;
 
   // Wraps any async action to increment/decrement actionLoading counter
   const withLoading = useCallback(async <T,>(fn: () => Promise<T>): Promise<T> => {
@@ -365,7 +405,16 @@ export function LifeOSProvider({ children }: { children: React.ReactNode }) {
         type,
         timestamp: Date.now(),
       };
-      setNotifications((prev) => [...prev.slice(-3), newNotification]);
+      // Trigger modern stacked Sonner toast
+      if (type === "success") {
+        toast.success(title, { description: message });
+      } else if (type === "error") {
+        toast.error(title, { description: message });
+      } else if (type === "warning") {
+        toast.warning(title, { description: message });
+      } else {
+        toast.info(title, { description: message });
+      }
 
       // Subtle Web Audio chime for physical feedback
       try {
@@ -419,25 +468,9 @@ export function LifeOSProvider({ children }: { children: React.ReactNode }) {
     setSelectedDate(getLocalTodayStr());
   };
 
-  const refreshState = useCallback(async () => {
-    try {
-      setLoading(true);
-      const res = await fetch(`/api/dashboard?date=${selectedDate}`);
-      if (!res.ok) {
-        const errJson = await res.json().catch(() => null);
-        throw new Error(errJson?.details || errJson?.error || "Failed to fetch state from Supabase");
-      }
-      const data: DashboardState = await res.json();
-      setState(data);
-      setError(null);
-    } catch (err: unknown) {
-      const e = err as Error;
-      console.error("Dashboard fetch error:", e);
-      setError(e.message || "Failed to load");
-    } finally {
-      setLoading(false);
-    }
-  }, [selectedDate]);
+  const refreshState = useCallback(async (): Promise<void> => {
+    await queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+  }, [queryClient]);
 
   const checkDbStatus = useCallback(async () => {
     try {
@@ -455,10 +488,6 @@ export function LifeOSProvider({ children }: { children: React.ReactNode }) {
       });
     }
   }, []);
-
-  useEffect(() => {
-    refreshState();
-  }, [refreshState]);
 
   useEffect(() => {
     checkDbStatus();
@@ -639,7 +668,7 @@ export function LifeOSProvider({ children }: { children: React.ReactNode }) {
   };
 
   const startDeepWorkTimer = (topic?: string, description?: string) => {
-    const defaultTopic = topic?.trim() || "Engineering Income Work";
+    const defaultTopic = topic?.trim() || "Deep Work Session";
     const defaultDesc = description?.trim() || "Deep work focus block";
     const now = Date.now();
     const newTimer: ActiveDeepWorkTimer = {
@@ -1417,26 +1446,42 @@ export function LifeOSProvider({ children }: { children: React.ReactNode }) {
 
       if (nextStatus === "completed") {
         const task = state?.todayTasks?.find((t) => t.id === taskId);
-        if (task && task.title.toLowerCase().includes("yogasana")) {
+        if (task && (task.title.toLowerCase().includes("surya kriya") || task.title.toLowerCase().includes("surya_kriya") || task.title.toLowerCase().includes("yogasana"))) {
           const workout = state?.workoutToday;
+          const isSuryaKriya = task.title.toLowerCase().includes("surya");
           const alreadyLogged =
             workout &&
-            (workout.type.includes("yogasana") ||
+            (workout.type.includes("surya") ||
+              workout.type.includes("yogasana") ||
+              workout.description.toLowerCase().includes("surya") ||
               workout.description.toLowerCase().includes("yogasana") ||
-              workout.practices?.some((p) => p.includes("yogasana")));
+              workout.practices?.some((p) => p.includes("surya") || p.includes("yogasana")));
           if (!alreadyLogged) {
             fetch("/api/workout", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                sessionDate: selectedDate,
-                type: "yogasanas",
-                description: "Daily Non-Negotiable Yogasanas (8-Day Protocol)",
-                durationMinutes: 45,
-                asanaHoldingCount: 60,
-                practices: ["yogasanas"],
-                quality: "Zone 3/4 Physical",
-              }),
+              body: JSON.stringify(
+                isSuryaKriya
+                  ? {
+                      sessionDate: selectedDate,
+                      type: "surya_kriya",
+                      description: "Daily Non-Negotiable Surya Kriya (3 cycles)",
+                      durationMinutes: 25,
+                      cycles: 3,
+                      suryaKriyaCycles: 3,
+                      practices: ["surya_kriya"],
+                      quality: "Zone 3/4 Physical",
+                    }
+                  : {
+                      sessionDate: selectedDate,
+                      type: "yogasanas",
+                      description: "Daily Non-Negotiable Yogasanas (48-Day Protocol)",
+                      durationMinutes: 45,
+                      asanaHoldingCount: 60,
+                      practices: ["yogasanas"],
+                      quality: "Zone 3/4 Physical",
+                    }
+              ),
             })
               .then(() => refreshState())
               .catch(() => {});
@@ -1458,24 +1503,26 @@ export function LifeOSProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const toggleYogasanasDaily = async (targetDate?: string) => {
+  const toggleSuryaKriyaDaily = async (targetDate?: string, cycles: number = 3) => {
     const dStr = targetDate || selectedDate;
-    const isCompleted = state?.yogasanasChallenge?.isCompletedToday ?? false;
+    const isCompleted = state?.suryaKriyaChallenge?.isCompletedToday ?? state?.yogasanasChallenge?.isCompletedToday ?? false;
 
     await withLoading(async () => {
       try {
         if (!isCompleted) {
           // 1. Auto-log Workout / Sadhana to Supabase
+          const duration = Math.max(15, Math.round(cycles * 6.5));
           const workoutRes = await fetch("/api/workout", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               sessionDate: dStr,
-              type: "yogasanas",
-              description: "Daily Non-Negotiable Yogasanas (8-Day Protocol)",
-              durationMinutes: 45,
-              asanaHoldingCount: 60,
-              practices: ["yogasanas"],
+              type: "surya_kriya",
+              description: `Daily Non-Negotiable Surya Kriya (${cycles} cycles)`,
+              durationMinutes: duration,
+              cycles: cycles,
+              suryaKriyaCycles: cycles,
+              practices: ["surya_kriya"],
               quality: "Zone 3/4 Physical",
             }),
           });
@@ -1483,7 +1530,7 @@ export function LifeOSProvider({ children }: { children: React.ReactNode }) {
 
           // 2. Also synchronize any matching planner task
           const matchingTask = state?.todayTasks?.find(
-            (t) => t.title.toLowerCase().includes("yogasana") && t.status !== "completed"
+            (t) => (t.title.toLowerCase().includes("surya kriya") || t.title.toLowerCase().includes("surya_kriya") || t.title.toLowerCase().includes("yogasana")) && t.status !== "completed"
           );
           if (matchingTask) {
             await fetch("/api/planner/tasks", {
@@ -1494,25 +1541,28 @@ export function LifeOSProvider({ children }: { children: React.ReactNode }) {
           }
 
           notify(
-            "Sadhana Auto-Logged 🧘",
-            `Daily Yogasanas recorded in Supabase for ${dStr}! 8-Day streak updated.`,
+            "Sadhana Auto-Logged ☀️",
+            `Daily Surya Kriya (${cycles} cycles) recorded in Supabase for ${dStr}!`,
             "success"
           );
         } else {
           // If already completed and user clicks to uncheck:
           const workout = state?.workoutToday;
-          const isYogasana =
+          const isSuryaKriyaOrYog =
             workout &&
-            (workout.type.includes("yogasana") ||
+            (workout.type.includes("surya_kriya") ||
+              workout.type.includes("surya kriya") ||
+              workout.type.includes("yogasana") ||
+              workout.description.toLowerCase().includes("surya kriya") ||
               workout.description.toLowerCase().includes("yogasana") ||
-              workout.practices?.some((p) => p.includes("yogasana")));
+              workout.practices?.some((p) => p.includes("surya") || p.includes("yogasana")));
 
-          if (isYogasana && workout.id) {
+          if (isSuryaKriyaOrYog && workout.id) {
             await fetch(`/api/workout?id=${workout.id}`, { method: "DELETE" });
           }
 
           const matchingTask = state?.todayTasks?.find(
-            (t) => t.title.toLowerCase().includes("yogasana") && t.status === "completed"
+            (t) => (t.title.toLowerCase().includes("surya kriya") || t.title.toLowerCase().includes("surya_kriya") || t.title.toLowerCase().includes("yogasana")) && t.status === "completed"
           );
           if (matchingTask) {
             await fetch("/api/planner/tasks", {
@@ -1522,17 +1572,80 @@ export function LifeOSProvider({ children }: { children: React.ReactNode }) {
             });
           }
 
-          notify("Sadhana Unchecked", `Yogasanas status unchecked for ${dStr}`, "info");
+          notify("Sadhana Unchecked", `Surya Kriya status unchecked for ${dStr}`, "info");
         }
 
         await refreshState();
       } catch (err: unknown) {
         const e = err as Error;
-        console.error("Error toggling daily yogasanas:", e);
-        notify("Action Failed", e?.message || "Could not update daily yogasanas", "error");
+        console.error("Error toggling daily surya kriya:", e);
+        notify("Action Failed", e?.message || "Could not update daily surya kriya", "error");
       }
     });
   };
+
+  const updateSuryaKriyaDaily = async (cycles: number, targetDate?: string) => {
+    const dStr = targetDate || selectedDate;
+    // Optimistic UI state update so values reflect instantaneously
+    setState((prev) => {
+      if (!prev) return prev;
+      const prevWorkout = prev.workoutToday;
+      return {
+        ...prev,
+        workoutToday: prevWorkout
+          ? {
+              ...prevWorkout,
+              cycles,
+              suryaKriyaCycles: cycles,
+              description: `Daily Non-Negotiable Surya Kriya (${cycles} cycles)`,
+            }
+          : prevWorkout,
+        suryaKriyaChallenge: prev.suryaKriyaChallenge
+          ? {
+              ...prev.suryaKriyaChallenge,
+              todayCycles: cycles,
+            }
+          : prev.suryaKriyaChallenge,
+      };
+    });
+
+    try {
+      const workout = state?.workoutToday;
+      const isSuryaKriya =
+        workout &&
+        (workout.type.includes("surya_kriya") ||
+          workout.type.includes("surya kriya") ||
+          workout.description.toLowerCase().includes("surya kriya") ||
+          workout.practices?.some((p) => p.includes("surya")));
+
+      if (workout && workout.id && isSuryaKriya) {
+        const duration = Math.max(15, Math.round(cycles * 6.5));
+        const res = await fetch("/api/workout", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            id: workout.id,
+            cycles: cycles,
+            suryaKriyaCycles: cycles,
+            durationMinutes: duration,
+            description: `Daily Non-Negotiable Surya Kriya (${cycles} cycles)`,
+          }),
+        });
+        if (!res.ok) throw new Error("Failed to update Surya Kriya cycles");
+        notify("Sadhana Updated ☀️", `Surya Kriya set to ${cycles} cycles for ${dStr}!`, "success");
+      } else {
+        await toggleSuryaKriyaDaily(dStr, cycles);
+      }
+    } catch (err: unknown) {
+      const e = err as Error;
+      console.error("Error updating Surya Kriya cycles:", e);
+      notify("Action Failed", e?.message || "Could not update cycles", "error");
+    } finally {
+      refreshState();
+    }
+  };
+
+  const toggleYogasanasDaily = toggleSuryaKriyaDaily;
 
   return (
     <LifeOSContext.Provider
@@ -1609,6 +1722,8 @@ export function LifeOSProvider({ children }: { children: React.ReactNode }) {
         updateBook,
         deleteBook,
         togglePlannerTask,
+        toggleSuryaKriyaDaily,
+        updateSuryaKriyaDaily,
         toggleYogasanasDaily,
       }}
     >

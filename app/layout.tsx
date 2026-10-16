@@ -10,6 +10,9 @@ import NotificationToast from "@/components/NotificationToast";
 import GlobalLoader from "@/components/GlobalLoader";
 import AuthGuard from "@/components/AuthGuard";
 
+import { QueryProvider } from "@/components/providers/QueryProvider";
+import { Toaster } from "@/components/ui/sonner";
+
 export const metadata: Metadata = {
   title: "LifeOS v2.5 — Command Protocol & Daily Ledger",
   description:
@@ -40,20 +43,23 @@ export default function RootLayout({
         />
       </head>
       <body className="bg-background font-body-md text-on-surface antialiased min-h-screen selection:bg-primary-container/20 selection:text-primary">
-        <LifeOSProvider>
-          <AuthGuard>
-            <Navigation />
-            <main className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 pt-28 pb-20">
-              {children}
-            </main>
-            <QuickAddModal />
-            <BookReadingModal />
-            <EditItemModal />
-            <NotificationToast />
-            <GlobalLoader />
-            <Footer />
-          </AuthGuard>
-        </LifeOSProvider>
+        <QueryProvider>
+          <LifeOSProvider>
+            <AuthGuard>
+              <Navigation />
+              <main className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 pt-28 pb-20">
+                {children}
+              </main>
+              <QuickAddModal />
+              <BookReadingModal />
+              <EditItemModal />
+              <NotificationToast />
+              <Toaster />
+              <GlobalLoader />
+              <Footer />
+            </AuthGuard>
+          </LifeOSProvider>
+        </QueryProvider>
       </body>
     </html>
   );

@@ -2,8 +2,12 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { useLifeOS } from "@/context/LifeOSContext";
-import { addDaysToDateStr } from "@/lib/date-utils";
+import { addDaysToDateStr, formatDayFullWithOrdinal } from "@/lib/date-utils";
 import { ButtonSpinner } from "@/components/ButtonSpinner";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { DatePicker } from "@/components/ui/date-picker";
 
 export default function QuickAddModal() {
   const {
@@ -352,24 +356,21 @@ export default function QuickAddModal() {
   };
 
   return (
-    <div
-      onClick={(e) => {
-        if (e.target === e.currentTarget) setModalOpen(false);
-      }}
-      className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-[#09090b]/85 backdrop-blur-md overflow-y-auto"
-    >
-      <div
-        className={`relative w-full ${modalType === "reading" ? "max-w-3xl" : modalType === "daily_2min" ? "max-w-xl" : "max-w-lg"} bg-[#121215] rounded-[8px] shadow-[0_8px_32px_-4px_rgba(0,0,0,0.7)] border border-[#27272a] my-auto overflow-hidden`}
+    <Dialog open={modalOpen} onOpenChange={setModalOpen}>
+      <DialogContent
+        className={`p-0 overflow-hidden bg-[#121215] border border-[#27272a] shadow-2xl max-h-[85vh] sm:max-h-[80vh] flex flex-col ${
+          modalType === "reading" || modalType === "sleep" ? "max-w-2xl" : modalType === "daily_2min" ? "max-w-lg" : "max-w-md"
+        }`}
       >
         {/* Top Accent Line */}
-        <div className="h-[2px] w-full bg-gradient-to-r from-[#06b6d4] via-[#10b981] to-[#f59e0b]" />
+        <div className="h-[2px] w-full bg-gradient-to-r from-[#06b6d4] via-[#10b981] to-[#f59e0b] shrink-0" />
 
         {/* Modal Header */}
-        <div className="px-5 py-3.5 flex items-center justify-between border-b border-[#1e1e24] bg-[#0e0e11]">
-          <div className="flex items-center gap-3">
-            <span className="w-2.5 h-2.5 rounded-full bg-[#06b6d4] shadow-[0_0_8px_rgba(6,182,212,0.8)]" />
+        <DialogHeader className="px-4 py-2.5 sm:px-5 sm:py-3 flex flex-row items-center justify-between border-b border-[#1e1e24] bg-[#0e0e11] space-y-0 shrink-0">
+          <div className="flex items-center gap-2.5">
+            <span className="w-2.5 h-2.5 rounded-full bg-[#06b6d4] shadow-[0_0_8px_rgba(6,182,212,0.8)] shrink-0" />
             <div>
-              <h2 className="text-base sm:text-lg font-bold text-[#f4f4f5] tracking-tight">
+              <DialogTitle className="text-sm sm:text-base font-bold text-[#f4f4f5] tracking-tight">
                 {modalType === "daily_2min" && "DAILY PROTOCOL CHECK-IN (2 min fill)"}
                 {modalType === "sadhana" && "LOG SADHANA PRACTICE"}
                 {modalType === "sleep" && "LOG SLEEP DURATION & QUALITY"}
@@ -380,24 +381,17 @@ export default function QuickAddModal() {
                 {modalType === "deposit" && "ALLOCATE SOVEREIGNTY DEPOSIT ($)"}
                 {modalType === "brahmacharya" && "BRAHMACHARYA & VITALITY LOG"}
                 {modalType === "db_settings" && "SUPABASE & DRIZZLE CONFIGURATION"}
-              </h2>
-              <p className="text-xs font-mono text-[#a1a1aa] mt-0.5">
-                Date: <span className="text-[#06b6d4] font-semibold">{selectedDate}</span> • Target Table: Supabase PostgreSQL
-              </p>
+              </DialogTitle>
+              <DialogDescription className="text-[11px] font-mono text-[#a1a1aa] mt-0.5">
+                Date: <span className="text-[#06b6d4] font-semibold">{formatDayFullWithOrdinal(selectedDate)}</span> • Target Table: Supabase PostgreSQL
+              </DialogDescription>
             </div>
           </div>
-
-          <button
-            onClick={() => setModalOpen(false)}
-            className="w-8 h-8 rounded-[6px] bg-[#18181b] border border-[#27272a] hover:border-[#3f3f46] text-[#a1a1aa] hover:text-[#f4f4f5] flex items-center justify-center transition-colors cursor-pointer"
-          >
-            <span className="material-symbols-outlined text-[18px]">close</span>
-          </button>
-        </div>
+        </DialogHeader>
 
         {/* Modal Body: Daily 2min */}
         {modalType === "daily_2min" && (
-          <form onSubmit={handleDailySubmit} className="p-6 flex flex-col gap-4 text-sm font-mono">
+          <form onSubmit={handleDailySubmit} className="flex-1 min-h-0 overflow-y-auto p-3.5 sm:p-4 flex flex-col gap-2.5 text-xs font-mono">
             {/* Row 1: Sadhana & Brahmacharya */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
               <div className="p-3.5 bg-[#0e0e11] rounded-[6px] border border-[#1e1e24] flex flex-col gap-2.5">
@@ -615,34 +609,33 @@ export default function QuickAddModal() {
             </div>
 
             {/* Action Buttons */}
-            <div className="flex items-center justify-between pt-2">
+            <div className="sticky bottom-0 bg-[#0e0e11]/95 backdrop-blur-sm -mx-3.5 -mb-3.5 sm:-mx-4 sm:-mb-4 p-2.5 px-3.5 sm:px-4 border-t border-[#1e1e24] flex items-center justify-between z-10 shrink-0">
               <button
                 type="button"
                 onClick={() => setModalOpen(false)}
-                className="px-4 py-2.5 rounded-[6px] bg-[#18181b] border border-[#27272a] text-[#a1a1aa] hover:text-[#f4f4f5] text-sm font-semibold transition-colors cursor-pointer"
+                className="px-3 py-1.5 rounded-[6px] bg-[#18181b] border border-[#27272a] text-[#a1a1aa] hover:text-[#f4f4f5] text-xs font-semibold transition-colors cursor-pointer"
               >
                 Dismiss
               </button>
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="px-5 py-2.5 rounded-[6px] bg-[#f4f4f5] text-[#09090b] font-bold text-sm hover:bg-[#e4e4e7] transition-all flex items-center gap-2 cursor-pointer shadow-md disabled:opacity-60"
+                className="px-4 py-1.5 rounded-[6px] bg-[#f4f4f5] text-[#09090b] font-bold text-xs hover:bg-[#e4e4e7] transition-all flex items-center gap-1.5 cursor-pointer shadow-md disabled:opacity-60"
               >
                 {isSubmitting ? (
                   <ButtonSpinner />
                 ) : (
-                  <span className="material-symbols-outlined text-[18px]">done_all</span>
+                  <span className="material-symbols-outlined text-[16px]">done_all</span>
                 )}
-                <span>{isSubmitting ? "Saving to Supabase..." : "Seal & Commit Cadence ⏎"}</span>
+                <span>{isSubmitting ? "Saving..." : "Seal & Commit Cadence ⏎"}</span>
               </button>
             </div>
           </form>
         )}
 
         {/* Sadhana Modal */}
-        {/* Sadhana Modal */}
         {modalType === "sadhana" && (
-          <form onSubmit={handleWorkoutSubmit} className="p-4 sm:p-5 flex flex-col gap-3.5 text-sm font-mono">
+          <form onSubmit={handleWorkoutSubmit} className="flex-1 min-h-0 overflow-y-auto p-3.5 sm:p-4 flex flex-col gap-3 text-xs font-mono">
             {/* 3 Core Practices: Multi-select */}
             <div>
               <div className="flex items-center justify-between mb-2">
@@ -747,7 +740,7 @@ export default function QuickAddModal() {
                           Shambhavi Mahamudra
                         </div>
                         <div className="text-[11px] text-[#71717a] mt-0.5">
-                          Inner Energy &amp; 21-Min Kriya
+                          Inner Energy &amp; Sacred Kriya
                         </div>
                       </div>
                     </div>
@@ -794,46 +787,69 @@ export default function QuickAddModal() {
               <div className={`grid gap-3 ${sadhanaPractices.includes("surya_kriya") && sadhanaPractices.includes("yogasanas") ? "grid-cols-1 sm:grid-cols-2" : "grid-cols-1"}`}>
                 {/* Surya Kriya Count */}
                 {sadhanaPractices.includes("surya_kriya") && (
-                  <div className="p-3 bg-amber-500/5 rounded-lg border border-amber-500/30 flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <div className="w-8 h-8 rounded-md bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0">
-                        <span className="material-symbols-outlined text-[18px]">wb_sunny</span>
+                  <div className="p-3 bg-amber-500/5 rounded-lg border border-amber-500/30 flex flex-col gap-2.5">
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <div className="w-8 h-8 rounded-md bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0">
+                          <span className="material-symbols-outlined text-[18px]">wb_sunny</span>
+                        </div>
+                        <div className="min-w-0">
+                          <label className="text-xs font-bold uppercase tracking-wider block text-amber-300 truncate">
+                            Surya Kriya
+                          </label>
+                          <span className="text-[11px] text-[#a1a1aa] block font-mono">
+                            {suryaKriyaCycles} {suryaKriyaCycles === 1 ? "cycle" : "cycles"}
+                          </span>
+                        </div>
                       </div>
-                      <div className="min-w-0">
-                        <label className="text-xs font-bold uppercase tracking-wider block text-amber-300 truncate">
-                          Surya Kriya
-                        </label>
-                        <span className="text-[11px] text-[#a1a1aa] block font-mono">
-                          {suryaKriyaCycles} {suryaKriyaCycles === 1 ? "cycle" : "cycles"}
-                        </span>
+
+                      {/* Compact Number Stepper */}
+                      <div className="flex items-center bg-[#0e0e11] rounded-md border border-[#27272a] p-0.5 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => setSuryaKriyaCycles(Math.max(1, suryaKriyaCycles - 1))}
+                          className="w-7 h-7 rounded bg-[#18181b] hover:bg-amber-500/20 text-amber-400 flex items-center justify-center font-bold text-sm transition-colors cursor-pointer"
+                          aria-label="Decrease cycles"
+                        >
+                          -
+                        </button>
+                        <input
+                          type="number"
+                          min="1"
+                          value={suryaKriyaCycles}
+                          onChange={(e) => setSuryaKriyaCycles(Math.max(1, Number(e.target.value)))}
+                          className="w-12 bg-transparent text-center text-sm text-white font-bold font-mono focus:outline-none"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setSuryaKriyaCycles(suryaKriyaCycles + 1)}
+                          className="w-7 h-7 rounded bg-[#18181b] hover:bg-amber-500/20 text-amber-400 flex items-center justify-center font-bold text-sm transition-colors cursor-pointer"
+                          aria-label="Increase cycles"
+                        >
+                          +
+                        </button>
                       </div>
                     </div>
 
-                    {/* Compact Number Stepper */}
-                    <div className="flex items-center bg-[#0e0e11] rounded-md border border-[#27272a] p-0.5 shrink-0">
-                      <button
-                        type="button"
-                        onClick={() => setSuryaKriyaCycles(Math.max(1, suryaKriyaCycles - 1))}
-                        className="w-7 h-7 rounded bg-[#18181b] hover:bg-amber-500/20 text-amber-400 flex items-center justify-center font-bold text-sm transition-colors cursor-pointer"
-                        aria-label="Decrease cycles"
-                      >
-                        -
-                      </button>
-                      <input
-                        type="number"
-                        min="1"
-                        value={suryaKriyaCycles}
-                        onChange={(e) => setSuryaKriyaCycles(Math.max(1, Number(e.target.value)))}
-                        className="w-12 bg-transparent text-center text-sm text-white font-bold font-mono focus:outline-none"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setSuryaKriyaCycles(suryaKriyaCycles + 1)}
-                        className="w-7 h-7 rounded bg-[#18181b] hover:bg-amber-500/20 text-amber-400 flex items-center justify-center font-bold text-sm transition-colors cursor-pointer"
-                        aria-label="Increase cycles"
-                      >
-                        +
-                      </button>
+                    {/* Presets: 1, 3, 6, 7, 9, 11, 12 */}
+                    <div className="flex items-center gap-1.5 pt-1 border-t border-amber-500/20 flex-wrap">
+                      <span className="text-[10px] font-mono text-amber-300/80 uppercase tracking-wider mr-1">
+                        Cycles:
+                      </span>
+                      {[1, 3, 6, 7, 9, 11, 12].map((cycleVal) => (
+                        <button
+                          key={cycleVal}
+                          type="button"
+                          onClick={() => setSuryaKriyaCycles(cycleVal)}
+                          className={`px-2 py-0.5 rounded text-xs font-mono font-bold transition-all cursor-pointer ${
+                            suryaKriyaCycles === cycleVal
+                              ? "bg-amber-400 text-slate-950 shadow-[0_0_8px_rgba(251,191,36,0.4)]"
+                              : "bg-[#18181b] border border-amber-500/30 text-amber-200 hover:bg-amber-500/20"
+                          }`}
+                        >
+                          {cycleVal}
+                        </button>
+                      ))}
                     </div>
                   </div>
                 )}
@@ -892,7 +908,7 @@ export default function QuickAddModal() {
               <div className="px-3 py-2 bg-cyan-950/20 border border-cyan-500/30 rounded-lg flex items-center gap-2 text-xs text-cyan-300">
                 <span className="material-symbols-outlined text-[18px] text-cyan-400 shrink-0">check_circle</span>
                 <span>
-                  <strong>Shambhavi Mahamudra Kriya:</strong> 21-min protocol active
+                  <strong>Shambhavi Mahamudra Kriya:</strong> Sacred protocol active
                 </span>
               </div>
             )}
@@ -903,7 +919,7 @@ export default function QuickAddModal() {
                 <div className="flex items-center gap-2">
                   <span className="material-symbols-outlined text-[18px] text-rose-400 shrink-0">check_circle</span>
                   <span>
-                    <strong>Preparatory Asanas:</strong> 3-exercise warm-up set (~10 min)
+                    <strong>Preparatory Asanas:</strong> 3-exercise warm-up set active
                   </span>
                 </div>
                 <div className="ml-7 space-y-0.5 text-[11px] text-rose-300/70 font-mono">
@@ -938,23 +954,23 @@ export default function QuickAddModal() {
             </div>
 
             {/* Buttons */}
-            <div className="flex justify-end gap-2.5 pt-2 border-t border-[#1e1e24]">
+            <div className="sticky bottom-0 bg-[#0e0e11]/95 backdrop-blur-sm -mx-3.5 -mb-3.5 sm:-mx-4 sm:-mb-4 p-2.5 px-3.5 sm:px-4 border-t border-[#1e1e24] flex justify-end gap-2 z-10 shrink-0">
               <button
                 type="button"
                 onClick={() => setModalOpen(false)}
-                className="px-4 py-2 rounded-[6px] bg-[#18181b] border border-[#27272a] text-[#a1a1aa] hover:text-white text-sm font-semibold transition-colors cursor-pointer"
+                className="px-3 py-1.5 rounded-[6px] bg-[#18181b] border border-[#27272a] text-[#a1a1aa] hover:text-white text-xs font-semibold transition-colors cursor-pointer"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={isSubmitting || sadhanaPractices.length === 0}
-                className="px-5 py-2 rounded-[6px] bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-black font-bold text-sm transition-all flex items-center gap-2 shadow-md disabled:opacity-50 cursor-pointer"
+                className="px-4 py-1.5 rounded-[6px] bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-black font-bold text-xs transition-all flex items-center gap-1.5 shadow-md disabled:opacity-50 cursor-pointer"
               >
                 {isSubmitting ? (
                   <ButtonSpinner />
                 ) : (
-                  <span className="material-symbols-outlined text-[18px]">self_improvement</span>
+                  <span className="material-symbols-outlined text-[16px]">self_improvement</span>
                 )}
                 <span>{isSubmitting ? "Saving..." : "Save Sadhana Session ⏎"}</span>
               </button>
@@ -964,31 +980,18 @@ export default function QuickAddModal() {
 
         {/* Sleep & Recovery Modal */}
         {modalType === "sleep" && (
-          <form onSubmit={handleSleepSubmit} className="p-6 flex flex-col gap-4 text-sm font-mono">
-            {/* Start Date & End Date Interval */}
-            <div className="p-3.5 bg-[#0e0e11] rounded-[6px] border border-[#1e1e24] flex flex-col gap-3">
-              <span className="text-xs uppercase text-[#a1a1aa] tracking-wider font-semibold">
-                Sleep Interval (Start &amp; End Schedule)
-              </span>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                {/* Start Date & Bedtime */}
-                <div className="bg-[#121215] p-3 rounded-[6px] border border-[#27272a] flex flex-col gap-2.5">
+          <form onSubmit={handleSleepSubmit} className="flex-1 min-h-0 overflow-y-auto p-3.5 sm:p-4 flex flex-col gap-3 text-xs font-mono">
+            {/* Start Date & Bedtime + End Date & Wake Time: Full Visibility 2-Col Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              {/* Bedtime */}
+              <div className="bg-[#0e0e11] p-2.5 rounded-[6px] border border-[#1e1e24] flex flex-col gap-2">
+                <div className="flex items-center justify-between">
                   <div className="flex items-center gap-1.5 text-[#06b6d4]">
-                    <span className="material-symbols-outlined text-[18px]">bedtime</span>
-                    <span className="text-xs uppercase font-bold tracking-wider">Start Date &amp; Bedtime</span>
+                    <span className="material-symbols-outlined text-[16px]">bedtime</span>
+                    <span className="text-[11px] uppercase font-bold tracking-wider">Bedtime</span>
                   </div>
-                  <div>
-                    <label className="text-xs text-[#a1a1aa] block mb-1">Start Date</label>
-                    <input
-                      type="date"
-                      value={sleepStartDate}
-                      onChange={(e) => setSleepStartDate(e.target.value)}
-                      className="w-full bg-[#0a0a0c] border border-[#27272a] rounded p-2 text-sm text-[#f4f4f5] focus:border-[#06b6d4] focus:outline-none"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="text-xs text-[#a1a1aa] block mb-1">Bedtime (HH:MM)</label>
+                  <div className="flex items-center gap-1.5">
+                    <label className="text-[10px] text-[#71717a] uppercase font-mono">Time:</label>
                     <input
                       type="time"
                       value={sleepStartTime}
@@ -1004,29 +1007,28 @@ export default function QuickAddModal() {
                           setSleepLogMinutes(diff % 60);
                         }
                       }}
-                      className="w-full bg-[#0a0a0c] border border-[#27272a] rounded p-2 text-sm text-[#f4f4f5] focus:border-[#06b6d4] focus:outline-none"
+                      className="bg-[#121215] border border-[#27272a] rounded px-2 py-0.5 text-xs text-[#f4f4f5] focus:border-[#06b6d4] focus:outline-none font-mono"
                     />
                   </div>
                 </div>
+                <div>
+                  <label className="text-[10px] text-[#71717a] block mb-1">Date</label>
+                  <DatePicker
+                    value={sleepStartDate}
+                    onChange={(val) => setSleepStartDate(val)}
+                  />
+                </div>
+              </div>
 
-                {/* End Date & Wake Time */}
-                <div className="bg-[#121215] p-3 rounded-[6px] border border-[#27272a] flex flex-col gap-2.5">
+              {/* Wake Time */}
+              <div className="bg-[#0e0e11] p-2.5 rounded-[6px] border border-[#1e1e24] flex flex-col gap-2">
+                <div className="flex items-center justify-between">
                   <div className="flex items-center gap-1.5 text-[#10b981]">
-                    <span className="material-symbols-outlined text-[18px]">wb_sunny</span>
-                    <span className="text-xs uppercase font-bold tracking-wider">End Date &amp; Wake Time</span>
+                    <span className="material-symbols-outlined text-[16px]">wb_sunny</span>
+                    <span className="text-[11px] uppercase font-bold tracking-wider">Wake Time</span>
                   </div>
-                  <div>
-                    <label className="text-xs text-[#a1a1aa] block mb-1">End Date</label>
-                    <input
-                      type="date"
-                      value={sleepEndDate}
-                      onChange={(e) => setSleepEndDate(e.target.value)}
-                      className="w-full bg-[#0a0a0c] border border-[#27272a] rounded p-2 text-sm text-[#f4f4f5] focus:border-[#06b6d4] focus:outline-none"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="text-xs text-[#a1a1aa] block mb-1">Wake Time (HH:MM)</label>
+                  <div className="flex items-center gap-1.5">
+                    <label className="text-[10px] text-[#71717a] uppercase font-mono">Time:</label>
                     <input
                       type="time"
                       value={sleepEndTime}
@@ -1042,86 +1044,96 @@ export default function QuickAddModal() {
                           setSleepLogMinutes(diff % 60);
                         }
                       }}
-                      className="w-full bg-[#0a0a0c] border border-[#27272a] rounded p-2 text-sm text-[#f4f4f5] focus:border-[#06b6d4] focus:outline-none"
+                      className="bg-[#121215] border border-[#27272a] rounded px-2 py-0.5 text-xs text-[#f4f4f5] focus:border-[#06b6d4] focus:outline-none font-mono"
                     />
                   </div>
                 </div>
+                <div>
+                  <label className="text-[10px] text-[#71717a] block mb-1">Date</label>
+                  <DatePicker
+                    value={sleepEndDate}
+                    onChange={(val) => setSleepEndDate(val)}
+                  />
+                </div>
               </div>
             </div>
 
-            {/* Duration Section */}
-            <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <label className="text-xs text-[#a1a1aa] uppercase font-semibold tracking-wider">
+            {/* Total Duration Card */}
+            <div className="p-2.5 bg-[#0e0e11] rounded-[6px] border border-[#1e1e24] flex flex-col gap-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] text-[#a1a1aa] uppercase font-semibold tracking-wider">
                   Total Sleep Duration
-                </label>
-                <span className="text-sm text-[#06b6d4] font-bold font-mono">
+                </span>
+                <span className="text-xs text-[#06b6d4] font-bold font-mono">
                   {sleepLogHours}h {sleepLogMinutes}m ({Number(sleepLogHours) * 60 + Number(sleepLogMinutes)} mins)
                 </span>
               </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-xs text-[#a1a1aa] block mb-1">Hours</label>
-                  <input
-                    type="number"
-                    min="0"
-                    max="24"
-                    step="1"
-                    value={sleepLogHours}
-                    onChange={(e) => setSleepLogHours(Number(e.target.value))}
-                    className="w-full bg-[#0e0e11] border border-[#27272a] rounded-[6px] p-2.5 text-sm text-[#f4f4f5] focus:border-[#06b6d4] focus:outline-none"
-                    required
-                  />
+              <div className="flex items-center justify-between gap-3 flex-wrap">
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1">
+                    <input
+                      type="number"
+                      min="0"
+                      max="24"
+                      step="1"
+                      value={sleepLogHours}
+                      onChange={(e) => setSleepLogHours(Number(e.target.value))}
+                      className="w-14 bg-[#121215] border border-[#27272a] rounded px-2 py-1 text-center text-xs text-[#f4f4f5] focus:border-[#06b6d4] focus:outline-none font-bold"
+                      required
+                    />
+                    <span className="text-[11px] text-[#71717a]">hrs</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <input
+                      type="number"
+                      min="0"
+                      max="59"
+                      step="5"
+                      value={sleepLogMinutes}
+                      onChange={(e) => setSleepLogMinutes(Number(e.target.value))}
+                      className="w-14 bg-[#121215] border border-[#27272a] rounded px-2 py-1 text-center text-xs text-[#f4f4f5] focus:border-[#06b6d4] focus:outline-none font-bold"
+                      required
+                    />
+                    <span className="text-[11px] text-[#71717a]">min</span>
+                  </div>
                 </div>
-                <div>
-                  <label className="text-xs text-[#a1a1aa] block mb-1">Minutes</label>
-                  <input
-                    type="number"
-                    min="0"
-                    max="59"
-                    step="5"
-                    value={sleepLogMinutes}
-                    onChange={(e) => setSleepLogMinutes(Number(e.target.value))}
-                    className="w-full bg-[#0e0e11] border border-[#27272a] rounded-[6px] p-2.5 text-sm text-[#f4f4f5] focus:border-[#06b6d4] focus:outline-none"
-                    required
-                  />
-                </div>
-              </div>
-              {/* Presets */}
-              <div className="flex items-center gap-1.5 mt-2 flex-wrap">
-                <span className="text-xs text-[#71717a]">Presets:</span>
-                {[
-                  { label: "6h 0m", h: 6, m: 0 },
-                  { label: "7h 0m", h: 7, m: 0 },
-                  { label: "7h 30m", h: 7, m: 30 },
-                  { label: "8h 0m", h: 8, m: 0 },
-                  { label: "8h 30m", h: 8, m: 30 },
-                ].map((preset) => (
-                  <button
-                    key={preset.label}
-                    type="button"
-                    onClick={() => {
-                      setSleepLogHours(preset.h);
-                      setSleepLogMinutes(preset.m);
-                    }}
-                    className={`px-2.5 py-1 rounded-[4px] text-xs font-mono border transition-colors cursor-pointer ${sleepLogHours === preset.h && sleepLogMinutes === preset.m
-                      ? "bg-[#06b6d4]/20 border-[#06b6d4] text-[#06b6d4] font-bold"
-                      : "bg-[#18181b] border-[#27272a] text-[#a1a1aa] hover:text-[#f4f4f5]"
+
+                {/* Presets */}
+                <div className="flex items-center gap-1 flex-wrap">
+                  {[
+                    { label: "6h", h: 6, m: 0 },
+                    { label: "7h", h: 7, m: 0 },
+                    { label: "7.5h", h: 7, m: 30 },
+                    { label: "8h", h: 8, m: 0 },
+                    { label: "8.5h", h: 8, m: 30 },
+                  ].map((preset) => (
+                    <button
+                      key={preset.label}
+                      type="button"
+                      onClick={() => {
+                        setSleepLogHours(preset.h);
+                        setSleepLogMinutes(preset.m);
+                      }}
+                      className={`px-2 py-0.5 rounded text-[11px] font-mono border transition-colors cursor-pointer ${
+                        sleepLogHours === preset.h && sleepLogMinutes === preset.m
+                          ? "bg-[#06b6d4]/20 border-[#06b6d4] text-[#06b6d4] font-bold"
+                          : "bg-[#18181b] border-[#27272a] text-[#a1a1aa] hover:text-[#f4f4f5]"
                       }`}
-                  >
-                    {preset.label}
-                  </button>
-                ))}
+                    >
+                      {preset.label}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
 
-            {/* Restorative Score */}
-            <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <label className="text-xs text-[#a1a1aa] uppercase font-semibold tracking-wider">
+            {/* Restorative Quality Score */}
+            <div className="p-2.5 bg-[#0e0e11] rounded-[6px] border border-[#1e1e24] flex flex-col gap-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] text-[#a1a1aa] uppercase font-semibold tracking-wider">
                   Restorative Quality Score (0–100)
-                </label>
-                <span className="text-sm text-[#10b981] font-bold font-mono">
+                </span>
+                <span className="text-xs text-[#10b981] font-bold font-mono">
                   {sleepLogScore} / 100
                 </span>
               </div>
@@ -1140,29 +1152,29 @@ export default function QuickAddModal() {
                   max="100"
                   value={sleepLogScore}
                   onChange={(e) => setSleepLogScore(Number(e.target.value))}
-                  className="w-20 bg-[#0e0e11] border border-[#27272a] rounded-[6px] p-2 text-center text-sm text-[#10b981] font-bold focus:border-[#06b6d4] focus:outline-none font-mono"
+                  className="w-16 bg-[#121215] border border-[#27272a] rounded px-2 py-1 text-center text-xs text-[#10b981] font-bold focus:border-[#06b6d4] focus:outline-none font-mono"
                 />
               </div>
             </div>
 
-            {/* Actions */}
-            <div className="flex justify-end gap-2.5 pt-2">
+            {/* Sticky Action Buttons */}
+            <div className="sticky bottom-0 bg-[#0e0e11]/95 backdrop-blur-sm -mx-3.5 -mb-3.5 sm:-mx-4 sm:-mb-4 p-2.5 px-3.5 sm:px-4 border-t border-[#1e1e24] flex justify-end gap-2 z-10 shrink-0">
               <button
                 type="button"
                 onClick={() => setModalOpen(false)}
-                className="px-4 py-2.5 rounded-[6px] bg-[#18181b] border border-[#27272a] text-[#a1a1aa] hover:text-[#f4f4f5] text-sm font-semibold transition-colors cursor-pointer"
+                className="px-3 py-1.5 rounded-[6px] bg-[#18181b] border border-[#27272a] text-[#a1a1aa] hover:text-[#f4f4f5] text-xs font-semibold transition-colors cursor-pointer"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="px-5 py-2.5 rounded-[6px] bg-[#f4f4f5] text-[#09090b] font-bold text-sm hover:bg-[#e4e4e7] transition-all flex items-center gap-2 cursor-pointer shadow-md disabled:opacity-60"
+                className="px-4 py-1.5 rounded-[6px] bg-[#f4f4f5] text-[#09090b] font-bold text-xs hover:bg-[#e4e4e7] transition-all flex items-center gap-1.5 cursor-pointer shadow-md disabled:opacity-60"
               >
                 {isSubmitting ? (
                   <ButtonSpinner />
                 ) : (
-                  <span className="material-symbols-outlined text-[18px]">bedtime</span>
+                  <span className="material-symbols-outlined text-[16px]">bedtime</span>
                 )}
                 <span>{isSubmitting ? "Saving..." : "Save Sleep Telemetry ⏎"}</span>
               </button>
@@ -1172,12 +1184,12 @@ export default function QuickAddModal() {
 
         {/* Deep Work Modal */}
         {modalType === "deepwork" && (
-          <form onSubmit={handleDeepWorkSubmit} className="p-6 flex flex-col gap-4 text-sm font-mono">
+          <form onSubmit={handleDeepWorkSubmit} className="flex-1 min-h-0 overflow-y-auto p-3.5 sm:p-4 flex flex-col gap-2.5 text-xs font-mono">
             {/* Live Timer Option */}
-            <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-lg flex items-center justify-between gap-3">
+            <div className="p-2.5 bg-amber-500/10 border border-amber-500/30 rounded-lg flex items-center justify-between gap-3">
               <div>
                 <span className="text-xs font-bold text-amber-300 block">Want to track live instead?</span>
-                <span className="text-[11px] text-[#a1a1aa] font-sans">Start the focus stopwatch and auto-log when finished.</span>
+                <span className="text-[10px] text-[#a1a1aa] font-sans">Start the focus stopwatch and auto-log when finished.</span>
               </div>
               <button
                 type="button"
@@ -1185,15 +1197,15 @@ export default function QuickAddModal() {
                   startDeepWorkTimer(deepTopic || "Engineering Income Work", deepDesc);
                   setModalOpen(false);
                 }}
-                className="px-3 py-1.5 rounded bg-amber-400 hover:bg-amber-300 text-black font-semibold text-xs transition-colors flex items-center gap-1 shadow-sm shrink-0 cursor-pointer"
+                className="px-2.5 py-1 rounded bg-amber-400 hover:bg-amber-300 text-black font-semibold text-xs transition-colors flex items-center gap-1 shadow-sm shrink-0 cursor-pointer"
               >
-                <span className="material-symbols-outlined text-[15px]">play_arrow</span>
+                <span className="material-symbols-outlined text-[14px]">play_arrow</span>
                 <span>Start Live Timer</span>
               </button>
             </div>
 
             <div>
-              <label className="text-xs font-semibold text-[#a1a1aa] uppercase tracking-wider block mb-1.5">
+              <label className="text-[11px] font-semibold text-[#a1a1aa] uppercase tracking-wider block mb-1">
                 Deep Work Topic (Income Work)
               </label>
               <input
@@ -1202,12 +1214,12 @@ export default function QuickAddModal() {
                 value={deepTopic}
                 onChange={(e) => setDeepTopic(e.target.value)}
                 required
-                className="w-full bg-[#0e0e11] border border-[#27272a] rounded-[6px] p-2.5 text-sm text-[#f4f4f5] focus:border-[#06b6d4] focus:outline-none"
+                className="w-full bg-[#0e0e11] border border-[#27272a] rounded-[6px] p-2 text-xs text-[#f4f4f5] focus:border-[#06b6d4] focus:outline-none"
               />
             </div>
 
             <div>
-              <label className="text-xs font-semibold text-[#a1a1aa] uppercase tracking-wider block mb-1.5">
+              <label className="text-[11px] font-semibold text-[#a1a1aa] uppercase tracking-wider block mb-1">
                 Session Scope &amp; Deliverables
               </label>
               <textarea
@@ -1215,24 +1227,24 @@ export default function QuickAddModal() {
                 placeholder="e.g. Engineered payment gateway latency mitigation and queue backpressure."
                 value={deepDesc}
                 onChange={(e) => setDeepDesc(e.target.value)}
-                className="w-full bg-[#0e0e11] border border-[#27272a] rounded-[6px] p-2.5 text-sm text-[#f4f4f5] font-sans focus:border-[#06b6d4] focus:outline-none resize-none"
+                className="w-full bg-[#0e0e11] border border-[#27272a] rounded-[6px] p-2 text-xs text-[#f4f4f5] font-sans focus:border-[#06b6d4] focus:outline-none resize-none"
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-3.5">
+            <div className="grid grid-cols-2 gap-2.5">
               <div>
-                <label className="text-xs font-semibold text-[#a1a1aa] uppercase tracking-wider block mb-1.5">
+                <label className="text-[11px] font-semibold text-[#a1a1aa] uppercase tracking-wider block mb-1">
                   Duration (Minutes)
                 </label>
                 <input
                   type="number"
                   value={deepMins}
                   onChange={(e) => setDeepMins(Number(e.target.value))}
-                  className="w-full bg-[#0e0e11] border border-[#27272a] rounded-[6px] p-2.5 text-sm text-[#f4f4f5] focus:border-[#06b6d4] focus:outline-none"
+                  className="w-full bg-[#0e0e11] border border-[#27272a] rounded-[6px] p-2 text-xs text-[#f4f4f5] focus:border-[#06b6d4] focus:outline-none"
                 />
               </div>
               <div>
-                <label className="text-xs font-semibold text-[#a1a1aa] uppercase tracking-wider block mb-1.5">
+                <label className="text-[11px] font-semibold text-[#a1a1aa] uppercase tracking-wider block mb-1">
                   Key Technical Insight
                 </label>
                 <input
@@ -1240,23 +1252,23 @@ export default function QuickAddModal() {
                   placeholder="e.g. Buffered channels disguise system backpressure..."
                   value={deepInsight}
                   onChange={(e) => setDeepInsight(e.target.value)}
-                  className="w-full bg-[#0e0e11] border border-[#27272a] rounded-[6px] p-2.5 text-sm text-[#f4f4f5] font-sans focus:border-[#06b6d4] focus:outline-none"
+                  className="w-full bg-[#0e0e11] border border-[#27272a] rounded-[6px] p-2 text-xs text-[#f4f4f5] font-sans focus:border-[#06b6d4] focus:outline-none"
                 />
               </div>
             </div>
 
-            <div className="flex justify-end gap-2.5 pt-2">
+            <div className="sticky bottom-0 bg-[#0e0e11]/95 backdrop-blur-sm -mx-3.5 -mb-3.5 sm:-mx-4 sm:-mb-4 p-2.5 px-3.5 sm:px-4 border-t border-[#1e1e24] flex justify-end gap-2 z-10 shrink-0">
               <button
                 type="button"
                 onClick={() => setModalOpen(false)}
-                className="px-4 py-2.5 rounded-[6px] bg-[#18181b] border border-[#27272a] text-[#a1a1aa] hover:text-white text-sm font-semibold transition-colors cursor-pointer"
+                className="px-3 py-1.5 rounded-[6px] bg-[#18181b] border border-[#27272a] text-[#a1a1aa] hover:text-white text-xs font-semibold transition-colors cursor-pointer"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="px-5 py-2.5 rounded-[6px] bg-[#f4f4f5] text-[#09090b] font-bold text-sm hover:bg-white transition-all cursor-pointer shadow-md flex items-center gap-2 disabled:opacity-60"
+                className="px-4 py-1.5 rounded-[6px] bg-[#f4f4f5] text-[#09090b] font-bold text-xs hover:bg-white transition-all cursor-pointer shadow-md flex items-center gap-1.5 disabled:opacity-60"
               >
                 {isSubmitting && <ButtonSpinner />}
                 <span>{isSubmitting ? "Saving..." : "Save Deep Work Session ⏎"}</span>
@@ -1269,17 +1281,16 @@ export default function QuickAddModal() {
         {modalType === "reading" && (() => {
           const selectedBook = state?.books?.find((b) => b.id === readingBookId)
             || state?.books?.find((b) => b.title.toLowerCase() === readingBookTitle.toLowerCase())
-            || state?.currentBook;
           const pagesDelta = Number(endPage) === Number(startPage) && Number(endPage) > 0 ? 1 : Math.max(0, Number(endPage) - Number(startPage));
 
           return (
-            <form onSubmit={handleReadingSubmit} className="p-6 text-sm font-mono">
-              <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
+            <form onSubmit={handleReadingSubmit} className="flex-1 min-h-0 overflow-y-auto p-3.5 sm:p-4 text-xs font-mono flex flex-col justify-between">
+              <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-start">
                 {/* LEFT SIDE: Necessary inputs */}
-                <div className="md:col-span-7 flex flex-col gap-4">
+                <div className="md:col-span-7 flex flex-col gap-2.5">
                   {/* Book Picker / Title Input */}
                   <div>
-                    <label className="text-xs font-semibold uppercase tracking-wider text-[#a1a1aa] block mb-1.5 flex items-center justify-between">
+                    <label className="text-[11px] font-semibold uppercase tracking-wider text-[#a1a1aa] block mb-1 flex items-center justify-between">
                       <span>Book Title *</span>
                       {state?.books && state.books.length > 0 && (
                         <span className="text-[10px] text-cyan-400 font-mono">
@@ -1289,7 +1300,7 @@ export default function QuickAddModal() {
                     </label>
 
                     {state?.books && state.books.length > 0 ? (
-                      <div className="space-y-2">
+                      <div className="space-y-1.5">
                         <select
                           value={readingBookId}
                           onChange={(e) => {
@@ -1305,7 +1316,7 @@ export default function QuickAddModal() {
                               }
                             }
                           }}
-                          className="w-full bg-[#0e0e11] border border-[#27272a] rounded-[6px] p-2.5 text-sm text-[#f4f4f5] focus:border-[#06b6d4] focus:outline-none font-sans cursor-pointer"
+                          className="w-full bg-[#0e0e11] border border-[#27272a] rounded-[6px] p-2 text-xs text-[#f4f4f5] focus:border-[#06b6d4] focus:outline-none font-sans cursor-pointer"
                         >
                           <option value="">Select from library...</option>
                           {state.books.map((b) => (
@@ -1335,26 +1346,26 @@ export default function QuickAddModal() {
                         required
                         value={readingBookTitle}
                         onChange={(e) => setReadingBookTitle(e.target.value)}
-                        className="w-full bg-[#0e0e11] border border-[#27272a] rounded-[6px] p-2.5 text-sm text-[#f4f4f5] focus:border-[#06b6d4] focus:outline-none font-sans"
+                        className="w-full bg-[#0e0e11] border border-[#27272a] rounded-[6px] p-2 text-xs text-[#f4f4f5] focus:border-[#06b6d4] focus:outline-none font-sans"
                       />
                     )}
                   </div>
 
                   <div>
-                    <label className="text-xs font-semibold uppercase tracking-wider text-[#a1a1aa] block mb-1.5">
+                    <label className="text-[11px] font-semibold uppercase tracking-wider text-[#a1a1aa] block mb-1">
                       Author
                     </label>
                     <input
                       type="text"
                       value={readingAuthor}
                       onChange={(e) => setReadingAuthor(e.target.value)}
-                      className="w-full bg-[#0e0e11] border border-[#27272a] rounded-[6px] p-2.5 text-sm text-[#f4f4f5] focus:border-[#06b6d4] focus:outline-none font-sans"
+                      className="w-full bg-[#0e0e11] border border-[#27272a] rounded-[6px] p-2 text-xs text-[#f4f4f5] focus:border-[#06b6d4] focus:outline-none font-sans"
                     />
                   </div>
 
-                  <div className="grid grid-cols-2 gap-3.5">
+                  <div className="grid grid-cols-2 gap-2.5">
                     <div>
-                      <label className="text-xs font-semibold uppercase tracking-wider text-[#a1a1aa] block mb-1.5">
+                      <label className="text-[11px] font-semibold uppercase tracking-wider text-[#a1a1aa] block mb-1">
                         Start Page *
                       </label>
                       <input
@@ -1363,11 +1374,11 @@ export default function QuickAddModal() {
                         required
                         value={startPage}
                         onChange={(e) => setStartPage(Number(e.target.value))}
-                        className="w-full bg-[#0e0e11] border border-[#27272a] rounded-[6px] p-2.5 text-sm text-[#f4f4f5] focus:border-[#06b6d4] focus:outline-none"
+                        className="w-full bg-[#0e0e11] border border-[#27272a] rounded-[6px] p-2 text-xs text-[#f4f4f5] focus:border-[#06b6d4] focus:outline-none"
                       />
                     </div>
                     <div>
-                      <label className="text-xs font-semibold uppercase tracking-wider text-[#a1a1aa] block mb-1.5">
+                      <label className="text-[11px] font-semibold uppercase tracking-wider text-[#a1a1aa] block mb-1">
                         End Page *
                       </label>
                       <input
@@ -1376,20 +1387,20 @@ export default function QuickAddModal() {
                         required
                         value={endPage}
                         onChange={(e) => setEndPage(Number(e.target.value))}
-                        className="w-full bg-[#0e0e11] border border-[#27272a] rounded-[6px] p-2.5 text-sm text-[#f4f4f5] focus:border-[#06b6d4] focus:outline-none"
+                        className="w-full bg-[#0e0e11] border border-[#27272a] rounded-[6px] p-2 text-xs text-[#f4f4f5] focus:border-[#06b6d4] focus:outline-none"
                       />
                     </div>
                   </div>
 
                   {pagesDelta > 0 && (
-                    <div className="p-2.5 rounded-[6px] bg-emerald-950/40 border border-emerald-500/30 text-emerald-300 text-xs font-mono flex items-center justify-between">
+                    <div className="p-2 rounded-[6px] bg-emerald-950/40 border border-emerald-500/30 text-emerald-300 text-xs font-mono flex items-center justify-between">
                       <span>Reading Volume:</span>
-                      <span className="font-bold text-sm">+{pagesDelta} Pages</span>
+                      <span className="font-bold">+{pagesDelta} Pages</span>
                     </div>
                   )}
 
                   <div>
-                    <label className="text-xs font-semibold uppercase tracking-wider text-[#a1a1aa] block mb-1.5">
+                    <label className="text-[11px] font-semibold uppercase tracking-wider text-[#a1a1aa] block mb-1">
                       Core Philosophical Quote / Reflection
                     </label>
                     <textarea
@@ -1397,38 +1408,20 @@ export default function QuickAddModal() {
                       placeholder="You have power over your mind - not outside events. Realize this, and you will find strength."
                       value={readingQuote}
                       onChange={(e) => setReadingQuote(e.target.value)}
-                      className="w-full bg-[#0e0e11] border border-[#27272a] rounded-[6px] p-2.5 text-sm text-[#f4f4f5] font-sans focus:border-[#06b6d4] focus:outline-none resize-none"
+                      className="w-full bg-[#0e0e11] border border-[#27272a] rounded-[6px] p-2 text-xs text-[#f4f4f5] font-sans focus:border-[#06b6d4] focus:outline-none resize-none"
                     />
-                  </div>
-
-                  <div className="flex justify-end gap-2.5 pt-2">
-                    <button
-                      type="button"
-                      onClick={() => setModalOpen(false)}
-                      className="px-4 py-2.5 rounded-[6px] bg-[#18181b] border border-[#27272a] text-[#a1a1aa] hover:text-white text-sm font-semibold transition-colors cursor-pointer"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="submit"
-                      disabled={isSubmitting}
-                      className="px-5 py-2.5 rounded-[6px] bg-[#f4f4f5] text-[#09090b] font-bold text-sm hover:bg-white transition-all cursor-pointer shadow-md flex items-center gap-2 disabled:opacity-60"
-                    >
-                      {isSubmitting && <ButtonSpinner />}
-                      <span>{isSubmitting ? "Saving..." : "Commit Reading ⏎"}</span>
-                    </button>
                   </div>
                 </div>
 
-                {/* RIGHT SIDE: Big picture of book */}
-                <div className="md:col-span-5 flex flex-col items-center justify-center p-5 bg-[#0a0a0d] border border-[#27272a] rounded-[8px] text-center relative overflow-hidden">
-                  <span className="text-[10px] font-mono uppercase tracking-wider text-cyan-400 mb-3 flex items-center gap-1.5 self-start">
+                {/* RIGHT SIDE: Compact book cover preview */}
+                <div className="md:col-span-5 flex flex-col items-center justify-center p-3.5 bg-[#0a0a0d] border border-[#27272a] rounded-[8px] text-center relative overflow-hidden">
+                  <span className="text-[10px] font-mono uppercase tracking-wider text-cyan-400 mb-2 flex items-center gap-1.5 self-start">
                     <span className="material-symbols-outlined text-[14px]">auto_stories</span>
                     <span>Book Cover</span>
                   </span>
 
-                  {/* Large Picture */}
-                  <div className="w-44 h-64 sm:w-48 sm:h-72 rounded-xl overflow-hidden shadow-2xl border border-white/15 relative flex items-center justify-center bg-zinc-950">
+                  {/* Compact Picture */}
+                  <div className="w-28 h-40 rounded-lg overflow-hidden shadow-lg border border-white/15 relative flex items-center justify-center bg-zinc-950">
                     {selectedBook?.imageUrl ? (
                       <img
                         src={selectedBook.imageUrl}
@@ -1436,39 +1429,39 @@ export default function QuickAddModal() {
                         className="w-full h-full object-cover"
                       />
                     ) : (
-                      <div className="w-full h-full flex flex-col items-center justify-center p-4 text-center bg-gradient-to-br from-zinc-800 to-black text-zinc-400">
-                        <span className="material-symbols-outlined text-[32px] text-cyan-400/70 mb-2">
+                      <div className="w-full h-full flex flex-col items-center justify-center p-2 text-center bg-gradient-to-br from-zinc-800 to-black text-zinc-400">
+                        <span className="material-symbols-outlined text-[24px] text-cyan-400/70 mb-1">
                           auto_stories
                         </span>
-                        <h4 className="text-xs font-bold text-white line-clamp-3 mb-1">
+                        <h4 className="text-[11px] font-bold text-white line-clamp-2 mb-0.5">
                           {readingBookTitle || "Reading Session"}
                         </h4>
                         {readingAuthor && (
-                          <p className="text-[10px] text-zinc-400 line-clamp-1">{readingAuthor}</p>
+                          <p className="text-[9px] text-zinc-400 line-clamp-1">{readingAuthor}</p>
                         )}
                       </div>
                     )}
 
                     {selectedBook?.isCompleted && (
-                      <div className="absolute top-2 right-2 px-2 py-0.5 rounded bg-emerald-500 text-zinc-950 text-[10px] font-mono font-bold flex items-center gap-1 shadow">
-                        <span className="material-symbols-outlined text-[13px]">check</span>
+                      <div className="absolute top-1.5 right-1.5 px-1.5 py-0.5 rounded bg-emerald-500 text-zinc-950 text-[9px] font-mono font-bold flex items-center gap-0.5 shadow">
+                        <span className="material-symbols-outlined text-[11px]">check</span>
                         <span>Completed</span>
                       </div>
                     )}
                   </div>
 
                   {/* Metadata below picture */}
-                  <div className="mt-3 w-full">
-                    <h4 className="text-sm font-bold text-white line-clamp-1">
+                  <div className="mt-2 w-full">
+                    <h4 className="text-xs font-bold text-white line-clamp-1">
                       {readingBookTitle || "Book"}
                     </h4>
                     {readingAuthor && (
-                      <p className="text-xs text-zinc-400 line-clamp-1 mt-0.5">{readingAuthor}</p>
+                      <p className="text-[10px] text-zinc-400 line-clamp-1 mt-0.5">{readingAuthor}</p>
                     )}
 
                     {selectedBook && (selectedBook.totalPages ?? 0) > 0 && (
-                      <div className="mt-3 bg-[#121215] p-2.5 rounded border border-[#27272a] text-left">
-                        <div className="flex items-center justify-between text-[11px] font-mono mb-1">
+                      <div className="mt-2 bg-[#121215] p-2 rounded border border-[#27272a] text-left">
+                        <div className="flex items-center justify-between text-[10px] font-mono mb-1">
                           <span className="text-zinc-400">Progress</span>
                           <span className="text-cyan-400 font-semibold">{selectedBook.pctCompleted ?? 0}%</span>
                         </div>
@@ -1478,7 +1471,7 @@ export default function QuickAddModal() {
                             style={{ width: `${Math.min(100, Math.max(3, selectedBook.pctCompleted ?? 0))}%` }}
                           />
                         </div>
-                        <div className="flex items-center justify-between text-[10px] font-mono text-zinc-400 mt-1.5">
+                        <div className="flex items-center justify-between text-[9px] font-mono text-zinc-400 mt-1">
                           <span>Page {selectedBook.currentPage || 0} / {selectedBook.totalPages}</span>
                           <span>{selectedBook.pagesRemaining ?? 0}p left</span>
                         </div>
@@ -1487,15 +1480,34 @@ export default function QuickAddModal() {
                   </div>
                 </div>
               </div>
+
+              {/* Sticky Action Buttons */}
+              <div className="sticky bottom-0 bg-[#0e0e11]/95 backdrop-blur-sm -mx-3.5 -mb-3.5 sm:-mx-4 sm:-mb-4 p-2.5 px-3.5 sm:px-4 border-t border-[#1e1e24] flex justify-end gap-2 z-10 shrink-0 mt-3">
+                <button
+                  type="button"
+                  onClick={() => setModalOpen(false)}
+                  className="px-3 py-1.5 rounded-[6px] bg-[#18181b] border border-[#27272a] text-[#a1a1aa] hover:text-white text-xs font-semibold transition-colors cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="px-4 py-1.5 rounded-[6px] bg-[#f4f4f5] text-[#09090b] font-bold text-xs hover:bg-white transition-all cursor-pointer shadow-md flex items-center gap-1.5 disabled:opacity-60"
+                >
+                  {isSubmitting && <ButtonSpinner />}
+                  <span>{isSubmitting ? "Saving..." : "Commit Reading ⏎"}</span>
+                </button>
+              </div>
             </form>
           );
         })()}
 
         {/* Deposit Modal */}
         {modalType === "deposit" && (
-          <form onSubmit={handleDepositSubmit} className="p-6 flex flex-col gap-4 text-sm font-mono">
+          <form onSubmit={handleDepositSubmit} className="flex-1 min-h-0 overflow-y-auto p-3.5 sm:p-4 flex flex-col gap-2.5 text-xs font-mono">
             <div>
-              <label className="text-xs uppercase font-semibold text-[#a1a1aa] tracking-wider block mb-1.5">
+              <label className="text-[11px] uppercase font-semibold text-[#a1a1aa] tracking-wider block mb-1">
                 Deposit Amount ($ USD)
               </label>
               <input
@@ -1504,34 +1516,34 @@ export default function QuickAddModal() {
                 value={depositAmount}
                 onChange={(e) => setDepositAmount(e.target.value)}
                 required
-                className="w-full bg-[#0e0e11] border border-[#27272a] rounded-[6px] p-2.5 text-base text-[#10b981] font-bold focus:border-[#06b6d4] focus:outline-none"
+                className="w-full bg-[#0e0e11] border border-[#27272a] rounded-[6px] p-2 text-base text-[#10b981] font-bold focus:border-[#06b6d4] focus:outline-none"
               />
             </div>
 
             <div>
-              <label className="text-xs uppercase font-semibold text-[#a1a1aa] tracking-wider block mb-1.5">
+              <label className="text-[11px] uppercase font-semibold text-[#a1a1aa] tracking-wider block mb-1">
                 Allocation Note
               </label>
               <input
                 type="text"
                 value={depositNote}
                 onChange={(e) => setDepositNote(e.target.value)}
-                className="w-full bg-[#0e0e11] border border-[#27272a] rounded-[6px] p-2.5 text-sm text-[#f4f4f5] focus:border-[#06b6d4] focus:outline-none font-sans"
+                className="w-full bg-[#0e0e11] border border-[#27272a] rounded-[6px] p-2 text-xs text-[#f4f4f5] focus:border-[#06b6d4] focus:outline-none font-sans"
               />
             </div>
 
-            <div className="flex justify-end gap-2.5 pt-2">
+            <div className="sticky bottom-0 bg-[#0e0e11]/95 backdrop-blur-sm -mx-3.5 -mb-3.5 sm:-mx-4 sm:-mb-4 p-2.5 px-3.5 sm:px-4 border-t border-[#1e1e24] flex justify-end gap-2 z-10 shrink-0">
               <button
                 type="button"
                 onClick={() => setModalOpen(false)}
-                className="px-4 py-2.5 rounded-[6px] bg-[#18181b] border border-[#27272a] text-[#a1a1aa] hover:text-white text-sm font-semibold transition-colors cursor-pointer"
+                className="px-3 py-1.5 rounded-[6px] bg-[#18181b] border border-[#27272a] text-[#a1a1aa] hover:text-white text-xs font-semibold transition-colors cursor-pointer"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="px-5 py-2.5 rounded-[6px] bg-[#f4f4f5] text-[#09090b] font-bold text-sm hover:bg-white transition-all cursor-pointer shadow-md flex items-center gap-2 disabled:opacity-60"
+                className="px-4 py-1.5 rounded-[6px] bg-[#f4f4f5] text-[#09090b] font-bold text-xs hover:bg-white transition-all cursor-pointer shadow-md flex items-center gap-1.5 disabled:opacity-60"
               >
                 {isSubmitting && <ButtonSpinner />}
                 <span>{isSubmitting ? "Allocating..." : "Record Sovereignty Deposit ⏎"}</span>
@@ -1542,9 +1554,9 @@ export default function QuickAddModal() {
 
         {/* Expense Modal */}
         {modalType === "expense" && (
-          <form onSubmit={handleExpenseSubmit} className="p-6 flex flex-col gap-4 text-sm font-mono">
+          <form onSubmit={handleExpenseSubmit} className="flex-1 min-h-0 overflow-y-auto p-3.5 sm:p-4 flex flex-col gap-2.5 text-xs font-mono">
             <div>
-              <label className="text-xs uppercase font-semibold text-[#a1a1aa] tracking-wider block mb-1.5">
+              <label className="text-[11px] uppercase font-semibold text-[#a1a1aa] tracking-wider block mb-1">
                 Expense Title / Description
               </label>
               <input
@@ -1553,13 +1565,13 @@ export default function QuickAddModal() {
                 value={expenseTitle}
                 onChange={(e) => setExpenseTitle(e.target.value)}
                 required
-                className="w-full bg-[#0e0e11] border border-[#27272a] rounded-[6px] p-2.5 text-sm text-[#f4f4f5] focus:border-[#06b6d4] focus:outline-none font-sans"
+                className="w-full bg-[#0e0e11] border border-[#27272a] rounded-[6px] p-2 text-xs text-[#f4f4f5] focus:border-[#06b6d4] focus:outline-none font-sans"
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-3.5">
+            <div className="grid grid-cols-2 gap-2.5">
               <div>
-                <label className="text-xs uppercase font-semibold text-[#a1a1aa] tracking-wider block mb-1.5">
+                <label className="text-[11px] uppercase font-semibold text-[#a1a1aa] tracking-wider block mb-1">
                   Amount in ₹ (INR)
                 </label>
                 <input
@@ -1568,17 +1580,17 @@ export default function QuickAddModal() {
                   value={expenseAmount}
                   onChange={(e) => setExpenseAmount(e.target.value)}
                   required
-                  className="w-full bg-[#0e0e11] border border-[#27272a] rounded-[6px] p-2.5 text-sm text-[#f4f4f5] focus:border-[#06b6d4] focus:outline-none"
+                  className="w-full bg-[#0e0e11] border border-[#27272a] rounded-[6px] p-2 text-xs text-[#f4f4f5] focus:border-[#06b6d4] focus:outline-none"
                 />
               </div>
               <div>
-                <label className="text-xs uppercase font-semibold text-[#a1a1aa] tracking-wider block mb-1.5">
+                <label className="text-[11px] uppercase font-semibold text-[#a1a1aa] tracking-wider block mb-1">
                   Category
                 </label>
                 <select
                   value={expenseCategory}
                   onChange={(e) => setExpenseCategory(e.target.value)}
-                  className="w-full bg-[#0e0e11] border border-[#27272a] rounded-[6px] p-2.5 text-sm text-[#f4f4f5] focus:border-[#06b6d4] focus:outline-none"
+                  className="w-full bg-[#0e0e11] border border-[#27272a] rounded-[6px] p-2 text-xs text-[#f4f4f5] focus:border-[#06b6d4] focus:outline-none"
                 >
                   <option value="food">food (Sattvic &amp; Groceries)</option>
                   <option value="books">books (Philosophy)</option>
@@ -1589,18 +1601,18 @@ export default function QuickAddModal() {
               </div>
             </div>
 
-            <div className="flex justify-end gap-2.5 pt-2">
+            <div className="sticky bottom-0 bg-[#0e0e11]/95 backdrop-blur-sm -mx-3.5 -mb-3.5 sm:-mx-4 sm:-mb-4 p-2.5 px-3.5 sm:px-4 border-t border-[#1e1e24] flex justify-end gap-2 z-10 shrink-0">
               <button
                 type="button"
                 onClick={() => setModalOpen(false)}
-                className="px-4 py-2.5 rounded-[6px] bg-[#18181b] border border-[#27272a] text-[#a1a1aa] hover:text-white text-sm font-semibold transition-colors cursor-pointer"
+                className="px-3 py-1.5 rounded-[6px] bg-[#18181b] border border-[#27272a] text-[#a1a1aa] hover:text-white text-xs font-semibold transition-colors cursor-pointer"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="px-5 py-2.5 rounded-[6px] bg-[#f4f4f5] text-[#09090b] font-bold text-sm hover:bg-white transition-all cursor-pointer shadow-md flex items-center gap-2 disabled:opacity-60"
+                className="px-4 py-1.5 rounded-[6px] bg-[#f4f4f5] text-[#09090b] font-bold text-xs hover:bg-white transition-all cursor-pointer shadow-md flex items-center gap-1.5 disabled:opacity-60"
               >
                 {isSubmitting && <ButtonSpinner />}
                 <span>{isSubmitting ? "Logging..." : "Log ₹ Spend ⏎"}</span>
@@ -1611,10 +1623,10 @@ export default function QuickAddModal() {
 
         {/* Add Money Modal */}
         {modalType === "add_money" && (
-          <form onSubmit={handleAddMoneySubmit} className="p-6 flex flex-col gap-4 text-sm font-mono">
+          <form onSubmit={handleAddMoneySubmit} className="flex-1 min-h-0 overflow-y-auto p-3.5 sm:p-4 flex flex-col gap-2.5 text-xs font-mono">
             <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <label className="text-xs uppercase font-semibold text-[#a1a1aa] tracking-wider">
+              <div className="flex items-center justify-between mb-1">
+                <label className="text-[11px] uppercase font-semibold text-[#a1a1aa] tracking-wider">
                   Amount to Add in ₹ (INR)
                 </label>
                 <span className="text-xs text-emerald-400 font-bold">
@@ -1630,18 +1642,18 @@ export default function QuickAddModal() {
                 onChange={(e) => setAddMoneyAmount(e.target.value)}
                 required
                 autoFocus
-                className="w-full bg-[#0e0e11] border border-[#27272a] rounded-[6px] p-2.5 text-lg font-bold text-emerald-400 focus:border-emerald-500 focus:outline-none"
+                className="w-full bg-[#0e0e11] border border-[#27272a] rounded-[6px] p-2 text-base font-bold text-emerald-400 focus:border-emerald-500 focus:outline-none"
               />
 
               {/* Quick Amount Chips */}
-              <div className="flex items-center gap-1.5 mt-2 flex-wrap">
-                <span className="text-xs text-[#71717a]">Quick:</span>
+              <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+                <span className="text-[10px] text-[#71717a]">Quick:</span>
                 {[100, 200, 500, 1000, 2000, 5000].map((amt) => (
                   <button
                     key={amt}
                     type="button"
                     onClick={() => setAddMoneyAmount(String(amt))}
-                    className={`px-2 py-0.5 rounded-[4px] text-xs font-mono border transition-colors cursor-pointer ${
+                    className={`px-1.5 py-0.5 rounded-[4px] text-[10px] font-mono border transition-colors cursor-pointer ${
                       addMoneyAmount === String(amt)
                         ? "bg-emerald-500/20 border-emerald-500 text-emerald-300 font-bold"
                         : "bg-[#18181b] border-[#27272a] text-[#a1a1aa] hover:text-[#f4f4f5]"
@@ -1654,7 +1666,7 @@ export default function QuickAddModal() {
             </div>
 
             <div>
-              <label className="text-xs uppercase font-semibold text-[#a1a1aa] tracking-wider block mb-1.5">
+              <label className="text-[11px] uppercase font-semibold text-[#a1a1aa] tracking-wider block mb-1">
                 Source / Description
               </label>
               <input
@@ -1662,18 +1674,18 @@ export default function QuickAddModal() {
                 placeholder="e.g. Monthly Top-Up, Allowance, Freelance Gig, Bonus"
                 value={addMoneyTitle}
                 onChange={(e) => setAddMoneyTitle(e.target.value)}
-                className="w-full bg-[#0e0e11] border border-[#27272a] rounded-[6px] p-2.5 text-sm text-[#f4f4f5] focus:border-emerald-500 focus:outline-none font-sans"
+                className="w-full bg-[#0e0e11] border border-[#27272a] rounded-[6px] p-2 text-xs text-[#f4f4f5] focus:border-emerald-500 focus:outline-none font-sans"
               />
             </div>
 
             <div>
-              <label className="text-xs uppercase font-semibold text-[#a1a1aa] tracking-wider block mb-1.5">
+              <label className="text-[11px] uppercase font-semibold text-[#a1a1aa] tracking-wider block mb-1">
                 Classification / Category
               </label>
               <select
                 value={addMoneyCategory}
                 onChange={(e) => setAddMoneyCategory(e.target.value)}
-                className="w-full bg-[#0e0e11] border border-[#27272a] rounded-[6px] p-2.5 text-sm text-[#f4f4f5] focus:border-emerald-500 focus:outline-none"
+                className="w-full bg-[#0e0e11] border border-[#27272a] rounded-[6px] p-2 text-xs text-[#f4f4f5] focus:border-emerald-500 focus:outline-none"
               >
                 <option value="income">Income &amp; Direct Earnings</option>
                 <option value="allowance">Monthly Allowance / Pocket Money</option>
@@ -1685,23 +1697,23 @@ export default function QuickAddModal() {
               </select>
             </div>
 
-            <div className="flex justify-end gap-2.5 pt-2">
+            <div className="sticky bottom-0 bg-[#0e0e11]/95 backdrop-blur-sm -mx-3.5 -mb-3.5 sm:-mx-4 sm:-mb-4 p-2.5 px-3.5 sm:px-4 border-t border-[#1e1e24] flex justify-end gap-2 z-10 shrink-0">
               <button
                 type="button"
                 onClick={() => setModalOpen(false)}
-                className="px-4 py-2.5 rounded-[6px] bg-[#18181b] border border-[#27272a] text-[#a1a1aa] hover:text-white text-sm font-semibold transition-colors cursor-pointer"
+                className="px-3 py-1.5 rounded-[6px] bg-[#18181b] border border-[#27272a] text-[#a1a1aa] hover:text-white text-xs font-semibold transition-colors cursor-pointer"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="px-5 py-2.5 rounded-[6px] bg-emerald-500 text-[#09090b] font-bold text-sm hover:bg-emerald-400 transition-all cursor-pointer shadow-md flex items-center gap-2 disabled:opacity-60"
+                className="px-4 py-1.5 rounded-[6px] bg-emerald-500 text-[#09090b] font-bold text-xs hover:bg-emerald-400 transition-all cursor-pointer shadow-md flex items-center gap-1.5 disabled:opacity-60"
               >
                 {isSubmitting ? (
                   <ButtonSpinner />
                 ) : (
-                  <span className="material-symbols-outlined text-[18px]">add_circle</span>
+                  <span className="material-symbols-outlined text-[16px]">add_circle</span>
                 )}
                 <span>{isSubmitting ? "Adding..." : "Add Money to Pool ⏎"}</span>
               </button>
@@ -1711,24 +1723,24 @@ export default function QuickAddModal() {
 
         {/* DB Settings */}
         {modalType === "db_settings" && (
-          <div className="p-6 flex flex-col gap-4 text-sm font-mono">
-            <div className="p-3.5 bg-[#0e0e11] rounded-[6px] border border-[#27272a] flex flex-col gap-2.5">
+          <div className="flex-1 min-h-0 overflow-y-auto p-3.5 sm:p-4 flex flex-col gap-2.5 text-xs font-mono">
+            <div className="p-2.5 bg-[#0e0e11] rounded-[6px] border border-[#27272a] flex flex-col gap-2">
               <div className="flex items-center justify-between">
-                <span className="text-xs uppercase text-[#a1a1aa] font-semibold tracking-wider">
+                <span className="text-[11px] uppercase text-[#a1a1aa] font-semibold tracking-wider">
                   Supabase &amp; Drizzle Connection Status
                 </span>
                 {dbStatus === null ? (
-                  <span className="px-2.5 py-0.5 rounded-[4px] text-xs font-bold bg-amber-500/15 text-amber-400 border border-amber-500/30 flex items-center gap-1.5">
+                  <span className="px-2 py-0.5 rounded-[4px] text-[10px] font-bold bg-amber-500/15 text-amber-400 border border-amber-500/30 flex items-center gap-1">
                     <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
                     CHECKING...
                   </span>
                 ) : dbStatus.connected ? (
-                  <span className="px-2.5 py-0.5 rounded-[4px] text-xs font-bold bg-[#10b981]/15 text-[#10b981] border border-[#10b981]/30 flex items-center gap-1.5">
+                  <span className="px-2 py-0.5 rounded-[4px] text-[10px] font-bold bg-[#10b981]/15 text-[#10b981] border border-[#10b981]/30 flex items-center gap-1">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
                     CONNECTED
                   </span>
                 ) : (
-                  <span className="px-2.5 py-0.5 rounded-[4px] text-xs font-bold bg-rose-500/15 text-rose-400 border border-rose-500/30 flex items-center gap-1.5">
+                  <span className="px-2 py-0.5 rounded-[4px] text-[10px] font-bold bg-rose-500/15 text-rose-400 border border-rose-500/30 flex items-center gap-1">
                     <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
                     DISCONNECTED
                   </span>
@@ -1740,14 +1752,14 @@ export default function QuickAddModal() {
                   : dbStatus.message || (dbStatus.connected ? "Successfully connected to Supabase PostgreSQL via Drizzle ORM!" : "Database connection failed.")}
               </p>
               {dbStatus?.dbUrlMasked && (
-                <div className="text-xs text-[#71717a] truncate font-mono">
+                <div className="text-[11px] text-[#71717a] truncate font-mono">
                   Configured: {dbStatus.dbUrlMasked}
                 </div>
               )}
               {dbStatus && !dbStatus.connected && (
-                <div className="mt-2 p-2.5 rounded bg-rose-950/30 border border-rose-500/20 text-[11px] text-rose-300/90 font-mono space-y-1">
+                <div className="mt-1.5 p-2 rounded bg-rose-950/30 border border-rose-500/20 text-[10px] text-rose-300/90 font-mono space-y-1">
                   <div className="font-bold text-rose-300 flex items-center gap-1">
-                    <span className="material-symbols-outlined text-[14px]">warning</span>
+                    <span className="material-symbols-outlined text-[13px]">warning</span>
                     Troubleshooting Guide:
                   </div>
                   <div>• Ensure your Supabase password is correct (reset in Supabase Dashboard $\rightarrow$ Settings $\rightarrow$ Database if needed).</div>
@@ -1756,25 +1768,25 @@ export default function QuickAddModal() {
               )}
             </div>
 
-            <div className="flex justify-end gap-2.5 pt-2">
+            <div className="sticky bottom-0 bg-[#0e0e11]/95 backdrop-blur-sm -mx-3.5 -mb-3.5 sm:-mx-4 sm:-mb-4 p-2.5 px-3.5 sm:px-4 border-t border-[#1e1e24] flex justify-end gap-2 z-10 shrink-0">
               <button
                 type="button"
                 onClick={() => checkDbStatus()}
-                className="px-4 py-2 rounded-[6px] bg-[#18181b] border border-[#27272a] hover:border-[#06b6d4]/50 text-[#06b6d4] text-sm font-semibold transition-colors cursor-pointer"
+                className="px-3 py-1.5 rounded-[6px] bg-[#18181b] border border-[#27272a] hover:border-[#06b6d4]/50 text-[#06b6d4] text-xs font-semibold transition-colors cursor-pointer"
               >
                 Re-test Connection
               </button>
               <button
                 type="button"
                 onClick={() => setModalOpen(false)}
-                className="px-5 py-2 rounded-[6px] bg-[#f4f4f5] text-[#09090b] font-bold text-sm hover:bg-white transition-all cursor-pointer shadow-md"
+                className="px-4 py-1.5 rounded-[6px] bg-[#f4f4f5] text-[#09090b] font-bold text-xs hover:bg-white transition-all cursor-pointer shadow-md"
               >
                 Done
               </button>
             </div>
           </div>
         )}
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }

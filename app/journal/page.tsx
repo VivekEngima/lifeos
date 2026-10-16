@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useLifeOS } from "@/context/LifeOSContext";
 import DailyTimeAuditSection from "@/components/DailyTimeAuditSection";
+import { formatDayFullWithOrdinal } from "@/lib/date-utils";
 
 export default function JournalPage() {
   const {
@@ -51,13 +52,7 @@ export default function JournalPage() {
 
   const formatDateLabel = (dStr: string) => {
     try {
-      const d = new Date(dStr + "T00:00:00Z");
-      return d.toLocaleDateString("en-US", {
-        weekday: "short",
-        day: "numeric",
-        month: "short",
-        year: "numeric",
-      });
+      return formatDayFullWithOrdinal(dStr);
     } catch {
       return dStr;
     }

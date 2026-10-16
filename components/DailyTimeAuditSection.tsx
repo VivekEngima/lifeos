@@ -3,6 +3,11 @@
 import React, { useState, useEffect } from "react";
 import { useLifeOS } from "@/context/LifeOSContext";
 import type { DailyTimeBlock } from "@/lib/lifeos-service";
+import { formatDayFullWithOrdinal } from "@/lib/date-utils";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 
 const CATEGORY_CONFIG: Record<
   DailyTimeBlock["category"],
@@ -311,7 +316,7 @@ export default function DailyTimeAuditSection() {
   const handleCopyObsidian = () => {
     if (sortedBlocks.length === 0) return;
     const lines = [
-      `# Daily 24-Hour Time & Coach Audit — ${selectedDate}`,
+      `# Daily 24-Hour Time & Coach Audit — ${formatDayFullWithOrdinal(selectedDate)}`,
       ``,
       `| Time Window | Category | Activity Done | Energy | Leverage | Should Have Done | Coach Optimization |`,
       `|---|---|---|---|---|---|---|`,
@@ -334,23 +339,23 @@ export default function DailyTimeAuditSection() {
   };
 
   return (
-    <section className="bg-[#121215] rounded-[6px] border border-[#1e1e24] p-5 sm:p-6 flex flex-col gap-5 shadow-sm">
+    <Card className="bg-surface-container-low border-outline-variant/70 p-5 sm:p-6 flex flex-col gap-5 shadow-sm">
       {/* Section Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-[#1e1e24] gap-3">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-outline-variant/40 gap-3">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-md bg-gradient-to-br from-amber-500/20 to-cyan-500/20 border border-amber-500/40 flex items-center justify-center text-amber-300 shrink-0">
+          <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-amber-500/20 to-cyan-500/20 border border-amber-500/40 flex items-center justify-center text-amber-300 shrink-0">
             <span className="material-symbols-outlined text-[20px]">schedule</span>
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h2 className="text-sm font-semibold tracking-tight text-[#f4f4f5]">
+              <h2 className="text-sm font-semibold tracking-tight text-on-surface">
                 24-Hour Whole Day Time Log &amp; Life Coach Audit
               </h2>
-              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-500/10 text-amber-300 border border-amber-500/30 font-bold uppercase">
+              <Badge variant="amber" className="text-[10px] uppercase font-bold">
                 Coach Optimization
-              </span>
+              </Badge>
             </div>
-            <p className="text-[#a1a1aa] text-xs mt-0.5 font-sans leading-relaxed">
+            <p className="text-on-surface-variant text-xs mt-0.5 font-sans leading-relaxed">
               Clinical accounting of every hour: What you did, what you should have done, and systemic root-cause optimization.
             </p>
           </div>
@@ -358,87 +363,91 @@ export default function DailyTimeAuditSection() {
 
         <div className="flex items-center gap-2">
           {sortedBlocks.length > 0 && (
-            <button
+            <Button
               type="button"
+              variant="outline"
+              size="sm"
               onClick={handleCopyObsidian}
-              className="px-2.5 py-1.5 rounded-[4px] bg-[#18181b] hover:bg-[#27272a] border border-[#27272a] text-[#a1a1aa] hover:text-[#f4f4f5] text-xs font-mono transition-colors flex items-center gap-1.5 cursor-pointer"
+              className="text-xs font-mono"
               title="Copy audit to markdown"
             >
               <span className="material-symbols-outlined text-[14px]">content_copy</span>
               <span className="hidden sm:inline">Copy Markdown</span>
-            </button>
+            </Button>
           )}
 
-          <button
+          <Button
             type="button"
+            variant="amber"
+            size="sm"
             onClick={handleOpenAdd}
-            className="px-3.5 py-1.5 rounded-[4px] bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 text-black font-semibold text-xs font-mono transition-all flex items-center gap-1.5 shadow-sm cursor-pointer"
+            className="font-mono text-xs font-semibold gap-1.5 shadow-sm"
           >
             <span className="material-symbols-outlined text-[16px]">add</span>
             <span>+ Add Time Block</span>
-          </button>
+          </Button>
         </div>
       </div>
 
       {/* Life Coach Telemetry 4-Card Bar */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 font-mono">
         {/* Card 1: Total Audited Hours */}
-        <div className="p-3 bg-[#0e0e11] rounded-[4px] border border-[#1e1e24] flex flex-col justify-between">
-          <span className="text-[10px] uppercase text-[#71717a] font-semibold tracking-wider">
+        <Card className="p-3 bg-surface-container border-outline-variant/40 flex flex-col justify-between">
+          <span className="text-[10px] uppercase text-zinc-400 font-semibold tracking-wider">
             Total Audited
           </span>
           <div className="flex items-baseline gap-1.5 mt-1">
-            <span className="text-2xl font-bold text-[#f4f4f5]">{totalHoursTracked}</span>
-            <span className="text-xs text-[#71717a]">/ 24 hrs</span>
+            <span className="text-2xl font-bold text-on-surface">{totalHoursTracked}</span>
+            <span className="text-xs text-zinc-400">/ 24 hrs</span>
           </div>
-          <span className="text-[11px] text-[#06b6d4] mt-1 font-sans">
+          <span className="text-[11px] text-cyan-400 mt-1 font-sans">
             {sortedBlocks.length} time {sortedBlocks.length === 1 ? "block" : "blocks"} logged
           </span>
-        </div>
+        </Card>
 
         {/* Card 2: High Leverage Ratio */}
-        <div className="p-3 bg-[#0e0e11] rounded-[4px] border border-[#1e1e24] flex flex-col justify-between">
-          <span className="text-[10px] uppercase text-[#71717a] font-semibold tracking-wider">
+        <Card className="p-3 bg-surface-container border-outline-variant/40 flex flex-col justify-between">
+          <span className="text-[10px] uppercase text-zinc-400 font-semibold tracking-wider">
             High Leverage ROI
           </span>
           <div className="flex items-baseline gap-1.5 mt-1">
-            <span className={`text-2xl font-bold ${highLeverageRatio >= 70 ? "text-[#10b981]" : "text-[#f59e0b]"}`}>
+            <span className={`text-2xl font-bold ${highLeverageRatio >= 70 ? "text-emerald-400" : "text-amber-400"}`}>
               {highLeverageRatio}%
             </span>
           </div>
-          <span className="text-[11px] text-[#a1a1aa] mt-1 font-sans">
+          <span className="text-[11px] text-on-surface-variant mt-1 font-sans">
             {(highLeverageMinutes / 60).toFixed(1)}h creative &amp; vitality
           </span>
-        </div>
+        </Card>
 
         {/* Card 3: Friction & Leaks */}
-        <div className="p-3 bg-[#0e0e11] rounded-[4px] border border-[#1e1e24] flex flex-col justify-between">
-          <span className="text-[10px] uppercase text-[#71717a] font-semibold tracking-wider">
+        <Card className="p-3 bg-surface-container border-outline-variant/40 flex flex-col justify-between">
+          <span className="text-[10px] uppercase text-zinc-400 font-semibold tracking-wider">
             Friction &amp; Leaks
           </span>
           <div className="flex items-baseline gap-1.5 mt-1">
-            <span className={`text-2xl font-bold ${leakMinutes > 0 ? "text-[#f43f5e]" : "text-[#10b981]"}`}>
+            <span className={`text-2xl font-bold ${leakMinutes > 0 ? "text-rose-400" : "text-emerald-400"}`}>
               {(leakMinutes / 60).toFixed(1)}h
             </span>
           </div>
-          <span className="text-[11px] text-[#a1a1aa] mt-1 font-sans">
+          <span className="text-[11px] text-on-surface-variant mt-1 font-sans">
             {leakMinutes > 0 ? `${leakMinutes}m passive drag detected` : "Zero leak blocks recorded"}
           </span>
-        </div>
+        </Card>
 
         {/* Card 4: Energy & Leverage Rating */}
-        <div className="p-3 bg-[#0e0e11] rounded-[4px] border border-[#1e1e24] flex flex-col justify-between">
-          <span className="text-[10px] uppercase text-[#71717a] font-semibold tracking-wider">
+        <Card className="p-3 bg-surface-container border-outline-variant/40 flex flex-col justify-between">
+          <span className="text-[10px] uppercase text-zinc-400 font-semibold tracking-wider">
             Energy &amp; Leverage
           </span>
           <div className="flex items-baseline gap-1.5 mt-1">
             <span className="text-xl font-bold text-amber-300">⚡ {avgEnergy}/5</span>
-            <span className="text-xs text-[#71717a]">ROI: {avgLeverage}/10</span>
+            <span className="text-xs text-zinc-400">ROI: {avgLeverage}/10</span>
           </div>
-          <span className="text-[11px] text-[#a1a1aa] mt-1 font-sans">
+          <span className="text-[11px] text-on-surface-variant mt-1 font-sans">
             Average block score
           </span>
-        </div>
+        </Card>
       </div>
 
       {/* Life Coach Dynamic Diagnostic Banner */}
@@ -920,6 +929,6 @@ export default function DailyTimeAuditSection() {
           })
         )}
       </div>
-    </section>
+    </Card>
   );
 }

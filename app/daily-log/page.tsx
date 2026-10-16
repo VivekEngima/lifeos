@@ -409,11 +409,6 @@ export default function DailyLogPage() {
                         <span className="font-mono text-xs text-emerald-400 font-semibold">
                           Morning Protocol
                         </span>
-                        {workout.durationMinutes && workout.durationMinutes > 0 ? (
-                          <span className="text-[11px] px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-400 font-medium">
-                            {workout.durationMinutes} min
-                          </span>
-                        ) : null}
                         <span className="text-[11px] px-2 py-0.5 rounded bg-surface-container-lowest text-on-surface-variant font-mono">
                           {workout.quality || "Zone 3/4 Physical"}
                         </span>
